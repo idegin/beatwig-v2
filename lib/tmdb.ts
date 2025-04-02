@@ -93,6 +93,83 @@ export interface VideosResponse {
 }
 
 /**
+ * Interface for TV show season details
+ */
+export interface Season {
+  id: number
+  name: string
+  overview: string
+  poster_path: string | null
+  season_number: number
+  air_date: string
+  episode_count: number
+}
+
+/**
+ * Interface for TV Season response with episodes
+ */
+export interface SeasonResponse {
+  id: number
+  air_date: string
+  name: string
+  overview: string
+  poster_path: string | null
+  season_number: number
+  episodes: Episode[]
+}
+
+/**
+ * Interface for Episode details
+ */
+export interface Episode {
+  id: number
+  name: string
+  overview: string
+  episode_number: number
+  season_number: number
+  still_path: string | null
+  air_date: string
+  runtime: number
+  vote_average: number
+  vote_count: number
+  crew: {
+    id: number
+    name: string
+    job: string
+    department: string
+  }[]
+  guest_stars: {
+    id: number
+    name: string
+    character: string
+    profile_path: string | null
+  }[]
+}
+
+/**
+ * Get all seasons for a TV show
+ */
+export async function getTVShowSeasons(tvId: string) {
+  // This data is included in the TV show details
+  const tvDetails = await fetchFromTMDB(`/tv/${tvId}`)
+  return tvDetails.seasons as Season[]
+}
+
+/**
+ * Get episodes for a specific season of a TV show
+ */
+export async function getTVShowSeasonDetails(tvId: string, seasonNumber: number) {
+  return fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}`) as Promise<SeasonResponse>
+}
+
+/**
+ * Get details for a specific episode of a TV show
+ */
+export async function getTVShowEpisodeDetails(tvId: string, seasonNumber: number, episodeNumber: number) {
+  return fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}`) as Promise<Episode>
+}
+
+/**
  * Get all trending (movies, TV shows, people)
  */
 export async function getAllTrending(timeWindow: "day" | "week" = "day") {
@@ -257,3 +334,16 @@ export async function getTVShowVideos(tvId: string) {
   return fetchFromTMDB(`/tv/${tvId}/videos`) as Promise<VideosResponse>
 }
 
+/**
+ * Get TV shows that are currently on the air
+ */
+export async function getOnTheAirTVShows(page = 1) {
+  return fetchFromTMDB("/tv/on_the_air", { page: page.toString() }) as Promise<TVResponse>
+}
+
+/**
+ * Get TV shows airing today
+ */
+export async function getAiringTodayTVShows(page = 1) {
+  return fetchFromTMDB("/tv/airing_today", { page: page.toString() }) as Promise<TVResponse>
+}

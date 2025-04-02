@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { getTMDBImageUrl, formatDate, truncateText, isMovie, getMediaTitle, getMediaDate } from "@/lib/utils"
+import {getTMDBImageUrl, formatDate, truncateText, isMovie, getMediaTitle, getMediaDate, cn} from "@/lib/utils"
 import { BACKDROP_SIZES, POSTER_SIZES } from "@/lib/constants"
 import type { Movie, TVShow } from "@/lib/tmdb"
 import { Play, Plus, Star, ChevronLeft, ChevronRight } from "lucide-react"
@@ -21,7 +21,6 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
   const [showTrailer, setShowTrailer] = useState(false)
   const [trailerKey, setTrailerKey] = useState("")
 
-  // Auto-advance the carousel
   useEffect(() => {
     const interval = setInterval(() => {
       goToNext()
@@ -36,7 +35,6 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
     setIsTransitioning(true)
     setCurrentIndex((prevIndex) => (prevIndex === 0 ? items.length - 1 : prevIndex - 1))
 
-    // Reset transition state after animation completes
     setTimeout(() => {
       setIsTransitioning(false)
     }, 500)
@@ -48,7 +46,6 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
     setIsTransitioning(true)
     setCurrentIndex((prevIndex) => (prevIndex === items.length - 1 ? 0 : prevIndex + 1))
 
-    // Reset transition state after animation completes
     setTimeout(() => {
       setIsTransitioning(false)
     }, 500)
@@ -60,7 +57,6 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
     setIsTransitioning(true)
     setCurrentIndex(index)
 
-    // Reset transition state after animation completes
     setTimeout(() => {
       setIsTransitioning(false)
     }, 500)
@@ -75,23 +71,37 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
   const detailsLink = `/${type}/${currentItem.id}`
   const watchLink = `/${type}/${currentItem.id}/watch`
 
-  // Determine the background image - use poster as fallback if backdrop is missing
-  const backgroundImage = currentItem.backdrop_path
-    ? getTMDBImageUrl(currentItem.backdrop_path, BACKDROP_SIZES.ORIGINAL)
-    : currentItem.poster_path
-      ? getTMDBImageUrl(currentItem.poster_path, POSTER_SIZES.ORIGINAL)
-      : "/placeholder.svg?height=720&width=1280"
+  const getBackgroundImage = (item:any) => {
+    return item.backdrop_path
+      ? getTMDBImageUrl(item.backdrop_path, BACKDROP_SIZES.ORIGINAL)
+      : item.poster_path
+        ? getTMDBImageUrl(item.poster_path, POSTER_SIZES.ORIGINAL)
+        : "/placeholder.svg?height=720&width=1280"
+  }
 
   return (
     <section className="relative h-[80vh] min-h-[600px] w-full overflow-hidden flex justify-center">
-      {/* Background Image */}
       <div className="absolute inset-0 transition-opacity duration-500 ease-in-out">
-        <Image src={backgroundImage || "/placeholder.svg"} alt={title} fill priority className="object-cover" />
+        {
+          items.map((item: (Movie | TVShow), index) => (
+            <Image
+              key={item.id}
+              src={getBackgroundImage(item)}
+              alt={getMediaTitle(item)}
+              fill
+              priority
+              className={cn("object-cover", {
+                "opacity-0": currentIndex !== index,
+                "opacity-100": currentIndex === index,
+                "transition-opacity duration-500 ease-in-out": true,
+              })}
+            />
+          ))
+        }
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent" />
       </div>
 
-      {/* Content */}
       <div className="container relative h-full flex flex-col justify-end pb-16 pt-32">
         <div className="max-w-2xl animate-fade-in">
           <Badge className="mb-4 bg-primary/90 hover:bg-primary">
@@ -134,7 +144,7 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
             <Button variant="outline" size="lg" className="gap-2 rounded-full" asChild>
               <Link href={detailsLink}>
                 <Plus className="h-5 w-5" />
-                View Details
+                Add To Watchlist
               </Link>
             </Button>
           </div>
@@ -169,7 +179,7 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
         {items.map((_, index) => (
           <button
             key={index}
-            className={`h-2 rounded-full transition-all ${
+            className={`h-2 rounded-full transition-all duration-500 ${
               index === currentIndex ? "w-8 bg-primary" : "w-2 bg-white/50"
             }`}
             onClick={() => goToSlide(index)}

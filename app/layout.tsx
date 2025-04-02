@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer"
 import { cn } from "@/lib/utils"
 import "@/app/globals.css"
 
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],

@@ -4,7 +4,8 @@ import type React from "react"
 
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { usePathname } from "next/navigation"
+import {usePathname} from "next/navigation"
+import {useRouter} from "next13-progressbar"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -16,7 +17,8 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const pathname = usePathname()
+  const pathname = usePathname();
+  const router = useRouter()
 
   // Handle scroll effect
   useEffect(() => {
@@ -32,7 +34,7 @@ export function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
   }
 

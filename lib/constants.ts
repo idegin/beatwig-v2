@@ -22,7 +22,7 @@ export const PROFILE_SIZES = {
 }
 
 export const SITE_NAME = "BeatWig"
-export const SITE_DESCRIPTION = "An advanced and beautiful movie website with images, trailers and info about movies"
+export const SITE_DESCRIPTION = "Stream Movies and TV Shows Online"
 
 export const MEDIA_TYPES = {
   MOVIE: "movie",

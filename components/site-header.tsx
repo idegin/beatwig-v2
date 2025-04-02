@@ -83,7 +83,7 @@ export function SiteHeader() {
 
   const navItems = [
     { name: "Home", href: "/", icon: Home },
-    { name: "Movies", href: "/movies", icon: Film },
+    { name: "Movies", href: "/movie", icon: Film },
     { name: "TV Shows", href: "/tv", icon: PanelLeft },
     { name: "Watchlist", href: "/watchlist", icon: Clock },
   ]
