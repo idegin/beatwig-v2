@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getMovieVideos } from "@/lib/tmdb"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: any) {
   try {
     const videos = await getMovieVideos(params.id)
     return NextResponse.json(videos)

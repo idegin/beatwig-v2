@@ -7,13 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Film, Tv, Users } from "lucide-react"
 import type { Metadata } from "next"
 
-interface SearchPageProps {
-  searchParams: {
-    query?: string
-  }
+// interface SearchPageProps {
+//   params: Promise<{ id: string }>
+//   searchParams: {
+//     query?: string
+//   }
+// }
+type Props = {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  //@ts-ignore
   const query = searchParams.query || ""
 
   return {
@@ -38,10 +44,10 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
   }
 }
 
-export default async function SearchPage({ searchParams }: SearchPageProps) {
+export default async function SearchPage({ searchParams }: Props) {
+  //@ts-ignore
   const query = searchParams.query || ""
 
-  // If no query, show empty state
   if (!query) {
     return (
       <>

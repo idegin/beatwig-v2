@@ -18,11 +18,16 @@ const nextConfig = withPWA({
         hostname: 'image.tmdb.org',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        pathname: '/**',
+      },
     ],
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'beatwig.vercel.app'],
+      allowedOrigins: ['localhost:3000', 'beatwig.vercel.app', 'beatwig-v2.vercel.app'],
     },
   },
 })
