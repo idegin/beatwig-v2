@@ -1,5 +1,5 @@
 import { SiteHeader } from "@/components/site-header"
-import { MediaDetails } from "@/components/media-details"
+import { MediaDetails } from "@/components/media-details/media-details"
 import { getTVShowDetails } from "@/lib/tmdb"
 import type { Metadata } from "next"
 

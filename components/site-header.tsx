@@ -23,6 +23,7 @@ import {
   PanelLeft,
   Sun,
   Moon,
+  LogIn,
 } from "lucide-react"
 import { SITE_NAME } from "@/lib/constants"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useTheme } from "next-themes"
+import { useAuth } from "@/context/auth.context"
 
 export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -50,6 +52,7 @@ export function SiteHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const { setTheme, theme } = useTheme()
+  const { user, googleSignIn, logout } = useAuth()
 
   useEffect(() => {
     setIsMounted(true)
@@ -81,6 +84,22 @@ export function SiteHeader() {
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await googleSignIn()
+    } catch (error) {
+      console.error("Failed to sign in with Google:", error)
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (error) {
+      console.error("Failed to log out:", error)
+    }
+  }
+
   const navItems = [
     { name: "Home", href: "/", icon: Home },
     { name: "Movies", href: "/movie", icon: Film },
@@ -95,15 +114,13 @@ export function SiteHeader() {
               isScrolled ? "bg-background/80 backdrop-blur-md shadow-md" : "bg-gradient-to-b from-black/70 to-transparent",
           )}
       >
-        {/* Rest of the component remains the same */}
         <div className="container flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <Film className="h-6 w-6 text-primary" />
+            <img src={'/logo.jpg'} alt={'logo'} width={25} />
             <span className="text-xl font-bold">{SITE_NAME}</span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href
@@ -126,7 +143,6 @@ export function SiteHeader() {
             })}
           </nav>
 
-          {/* Search, Theme Toggle and Avatar */}
           <div className="flex items-center gap-2">
             <form onSubmit={handleSearch} className="relative hidden md:block">
               <Input
@@ -141,77 +157,71 @@ export function SiteHeader() {
 
             <ThemeToggle />
 
-            {/* User Avatar Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder-user.jpg" alt="User" />
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.photoURL || "/placeholder-user.jpg"} alt={user.displayName || "User"} />
+                      <AvatarFallback>{user.displayName?.[0] || "U"}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel>{user.displayName || "My Account"}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem>
+                      <Clock className="mr-2 h-4 w-4" />
+                      <span>Watchlist</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Bell className="mr-2 h-4 w-4" />
+                      <span>History</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Sun className="mr-2 h-4 w-4" />
+                        <span>Theme</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem onClick={() => setTheme("light")}>
+                            <Sun className="mr-2 h-4 w-4" />
+                            <span>Light</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTheme("dark")}>
+                            <Moon className="mr-2 h-4 w-4" />
+                            <span>Dark</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTheme("system")}>
+                            <span className="mr-2">💻</span>
+                            <span>System</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuItem>
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      <span>Help</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Heart className="mr-2 h-4 w-4" />
-                    <span>Favorites</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Clock className="mr-2 h-4 w-4" />
-                    <span>Watchlist</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Bell className="mr-2 h-4 w-4" />
-                    <span>Notifications</span>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      <Sun className="mr-2 h-4 w-4" />
-                      <span>Theme</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuItem onClick={() => setTheme("light")}>
-                          <Sun className="mr-2 h-4 w-4" />
-                          <span>Light</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTheme("dark")}>
-                          <Moon className="mr-2 h-4 w-4" />
-                          <span>Dark</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTheme("system")}>
-                          <span className="mr-2">💻</span>
-                          <span>System</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                  <DropdownMenuItem>
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    <span>Help</span>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="ghost" size="sm" className="gap-2" onClick={handleGoogleSignIn}>
+                <LogIn className="h-4 w-4" />
+                Login
+              </Button>
+            )}
 
             {/* Mobile Menu Button */}
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>

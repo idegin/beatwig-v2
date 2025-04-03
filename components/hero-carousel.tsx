@@ -80,7 +80,7 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
   }
 
   return (
-    <section className="relative h-[80vh] min-h-[600px] w-full overflow-hidden flex justify-center">
+    <section className="relative h-[90vh] min-h-[600px] w-full overflow-hidden flex justify-center">
       <div className="absolute inset-0 transition-opacity duration-500 ease-in-out">
         {
           items.map((item: (Movie | TVShow), index) => (

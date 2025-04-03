@@ -16,17 +16,15 @@ import {
     Calendar,
     Clock,
     DollarSign,
-    DownloadIcon,
     ExternalLink,
     Film,
     Globe,
     Play,
-    Plus,
     Star,
     Tag
 } from "lucide-react"
 import {MovieTorrent} from "@/lib/yts";
-import {TorrentsModal} from "@/components/TorrentsModal";
+import MediaDetailsActions from "@/components/media-details/MediaDetailsActions";
 
 interface MediaDetailsProps {
     data: any
@@ -36,7 +34,6 @@ interface MediaDetailsProps {
 
 export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
     const [showTrailer, setShowTrailer] = useState(false);
-    const [showTorrents, setShowTorrents] = useState(false)
 
     if (!data) return null
 
@@ -104,44 +101,14 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                     />
                                 </div>
 
-                                <div className="mt-6 flex flex-col gap-3">
-                                    {trailer && (
-                                        <Button className="w-full gap-2" onClick={() => setShowTrailer(true)}>
-                                            <Play className="h-4 w-4"/>
-                                            Watch Trailer
-                                        </Button>
-                                    )}
-                                    <Button variant="outline" className="w-full gap-2" asChild>
-                                        <Link href={watchUrl}>
-                                            <Plus className="h-4 w-4"/>
-                                            Add To Watchlist
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="w-full gap-2 relative"
-                                        onClick={() => setShowTorrents(true)}
-                                        // disabled={!isMovieType || !torrents || torrents.length === 0}
-                                    >
-                                        <span
-                                            className={'absolute right-3 -top-2 text-xs bg-primary text-primary-foreground px-2 rounded-lg shadow-md'}
-                                        >
-                                            NEW
-                                        </span>
-                                        <DownloadIcon className="h-4 w-4"/>
-                                        Download Movie
-                                    </Button>
-                                </div>
+                                <MediaDetailsActions
+                                    data={data}
+                                    type={type}
+                                    torrents={torrents}
+                                />
                             </div>
                         </div>
 
-                        <TorrentsModal
-                            isOpen={showTorrents}
-                            onClose={() => setShowTorrents(false)}
-                            torrents={torrents || []}
-                            movieTitle={title}
-                            mediaType={type}
-                        />
 
                         <div className="md:col-span-2 lg:col-span-3">
                             <div>
@@ -559,12 +526,10 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                         </div>
                     </div>
 
-                    {/* Recommendations */}
                     {recommendations.length > 0 && (
                         <div className="mt-16">
-                            <h2 className="text-2xl font-bold mb-6">Recommendations</h2>
                             <MediaSection
-                                title=""
+                                title="✨ AI Recommendations"
                                 items={recommendations.slice(0, 12)}
                                 viewAllHref={`/${type}/${data.id}/recommendations`}
                             />
@@ -573,7 +538,6 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                 </div>
             </div>
 
-            {/* Trailer Popup */}
             {trailer && (
                 <VideoPopup
                     videoId={trailer.key}
