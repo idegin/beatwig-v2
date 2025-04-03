@@ -20,20 +20,23 @@ import {
     ExternalLink,
     Film,
     Globe,
-    Heart,
     Play,
     Plus,
     Star,
     Tag
 } from "lucide-react"
+import {MovieTorrent} from "@/lib/yts";
+import {TorrentsModal} from "@/components/TorrentsModal";
 
 interface MediaDetailsProps {
     data: any
     type: "movie" | "tv"
+    torrents?: MovieTorrent[]
 }
 
-export function MediaDetails({data, type}: MediaDetailsProps) {
-    const [showTrailer, setShowTrailer] = useState(false)
+export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
+    const [showTrailer, setShowTrailer] = useState(false);
+    const [showTorrents, setShowTorrents] = useState(false)
 
     if (!data) return null
 
@@ -62,7 +65,7 @@ export function MediaDetails({data, type}: MediaDetailsProps) {
 
     return (
         <div className="flex flex-col">
-            <div className="relative h-[50vh] min-h-[400px] w-full overflow-hidden">
+            <div className="relative h-[80vh] min-h-[500px] w-full overflow-hidden">
                 <Image
                     src={backgroundImage || "/placeholder.svg"}
                     alt={title}
@@ -114,13 +117,25 @@ export function MediaDetails({data, type}: MediaDetailsProps) {
                                             Add To Watchlist
                                         </Link>
                                     </Button>
-                                    <Button variant="ghost" className="w-full gap-2">
+                                    <Button variant="ghost" className="w-full gap-2"
+                                            onClick={() => setShowTorrents(true)}
+                                            disabled={!isMovieType || !torrents || torrents.length === 0}
+                                    >
                                         <DownloadIcon className="h-4 w-4"/>
                                         Download Movie
                                     </Button>
                                 </div>
                             </div>
                         </div>
+
+                        {isMovieType && torrents && (
+                            <TorrentsModal
+                                isOpen={showTorrents}
+                                onClose={() => setShowTorrents(false)}
+                                torrents={torrents || []}
+                                movieTitle={title}
+                            />
+                        )}
 
                         <div className="md:col-span-2 lg:col-span-3">
                             <div>
