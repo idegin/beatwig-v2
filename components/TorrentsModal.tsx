@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Download, FileType, HardDrive, Info } from "lucide-react"
+import { Clock, Download, FileType, HardDrive, Info } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 
@@ -16,9 +16,13 @@ interface TorrentsModalProps {
     onClose: () => void
     torrents: MovieTorrent[]
     movieTitle: string
+    mediaType: "movie" | "tv"
 }
 
-export function TorrentsModal({ isOpen, onClose, torrents, movieTitle }: TorrentsModalProps) {
+export function TorrentsModal({ isOpen, onClose, torrents, movieTitle, mediaType }: TorrentsModalProps) {
+    const isTVShow = mediaType === "tv";
+    const hasNoTorrents = torrents.length === 0;
+
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-md">
@@ -35,12 +39,34 @@ export function TorrentsModal({ isOpen, onClose, torrents, movieTitle }: Torrent
                     </div>
                 </DialogHeader>
 
-                <div className="space-y-3 mt-4 max-h-[60vh] overflow-y-auto pr-1">
-                    {torrents.length > 0 ? (
+                <div className="space-y-3 mt-4 max-h-[60vh] overflow-y-auto pr-1 select-none">
+                    {isTVShow ? (
+                        <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed">
+                            <div className="flex flex-col items-center gap-3">
+                                <Info className="h-10 w-10 text-primary/70" />
+                                <h3 className="font-medium text-lg">TV Show Downloads Coming Soon</h3>
+                                <p className="text-muted-foreground max-w-[300px]">
+                                    We're currently working on bringing TV show downloads to the platform.
+                                    Please check back later!
+                                </p>
+                            </div>
+                        </div>
+                    ) : hasNoTorrents ? (
+                        <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed">
+                            <div className="flex flex-col items-center gap-3">
+                                <Clock className="h-10 w-10 text-primary/70" />
+                                <h3 className="font-medium text-lg">Download Not Available Yet</h3>
+                                <p className="text-muted-foreground max-w-[300px]">
+                                    This movie might be too recent for downloads to be available.
+                                    Please check back later as we regularly update our download options.
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
                         torrents.map((torrent) => (
                             <div
                                 key={torrent.hash}
-                                className="border hover:bg-primary/20 border-border/60 rounded-lg p-4 bg-card hover:border-primary/80 transition-all duration-200"
+                                className="border hover:bg-primary/5 select-none border-border/60 rounded-lg p-4 bg-card hover:border-primary/80 transition-all duration-200"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex flex-col gap-2">
@@ -57,7 +83,7 @@ export function TorrentsModal({ isOpen, onClose, torrents, movieTitle }: Torrent
                                         </div>
                                     </div>
 
-                                    <Button asChild variant={'outline'} size="sm" className="gap-2 h-9 px-4">
+                                    <Button asChild variant="outline" size="sm" className="gap-2 h-9 px-4">
                                         <a href={torrent.url} target="_blank" rel="noopener noreferrer">
                                             <Download className="h-4 w-4" />
                                             Download
@@ -66,14 +92,9 @@ export function TorrentsModal({ isOpen, onClose, torrents, movieTitle }: Torrent
                                 </div>
                             </div>
                         ))
-                    ) : (
-                        <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed">
-                            <p className="text-muted-foreground">No download options available.</p>
-                        </div>
                     )}
                 </div>
             </DialogContent>
         </Dialog>
     )
 }
-

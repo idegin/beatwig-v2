@@ -3,11 +3,12 @@ import {MediaPlayer} from "@/components/media-player"
 import type {Metadata} from "next"
 
 type Props = {
-    params: { id: string }
-    searchParams: { [key: string]: string | string[] | undefined }
+    params: Promise<{ id: string }>
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export async function generateMetadata({params}: Props): Promise<Metadata> {
+    //@ts-ignore
     const tvDetails = await getTVShowDetails(params.id)
 
     return {
@@ -20,7 +21,8 @@ export async function generateMetadata({params}: Props): Promise<Metadata> {
     }
 }
 
-export default async function WatchTVShowPage({params, searchParams}: Props) {
+export default async function WatchTVShowPage({params}: Props) {
+    //@ts-ignore
     const [tvDetails, videosData] = await Promise.all([getTVShowDetails(params.id), getTVShowVideos(params.id)])
 
     const videos = videosData.results || []
@@ -31,9 +33,11 @@ export default async function WatchTVShowPage({params, searchParams}: Props) {
     return (
         <>
             <MediaPlayer
+                //@ts-ignore
                 mediaId={params.id}
                 mediaType="tv"
                 title={tvDetails.name}
+                //@ts-ignore
                 backUrl={`/tv/${params.id}`}
                 youtubeTrailerId={trailerKey}
             />

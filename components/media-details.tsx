@@ -83,7 +83,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
 
                 <div className="absolute inset-0 flex items-center justify-center">
                     <Link href={watchUrl}
-                          className={'h-20 w-20 flex items-center justify-center rounded-full hover:bg-primary-foreground hover:text-primary bg-primary text-primary-foreground transition-colors duration-200'}>
+                          className={'h-20 w-20 flex items-center justify-center rounded-full hover:bg-primary-foreground hover:text-primary bg-primary text-primary-foreground transition-colors duration-300'}>
                         <Play className="h-8 w-8"/>
                         <span className="sr-only">Watch</span>
                     </Link>
@@ -117,10 +117,17 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                             Add To Watchlist
                                         </Link>
                                     </Button>
-                                    <Button variant="ghost" className="w-full gap-2"
-                                            onClick={() => setShowTorrents(true)}
-                                            disabled={!isMovieType || !torrents || torrents.length === 0}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full gap-2 relative"
+                                        onClick={() => setShowTorrents(true)}
+                                        // disabled={!isMovieType || !torrents || torrents.length === 0}
                                     >
+                                        <span
+                                            className={'absolute right-3 -top-2 text-xs bg-primary text-primary-foreground px-2 rounded-lg shadow-md'}
+                                        >
+                                            NEW
+                                        </span>
                                         <DownloadIcon className="h-4 w-4"/>
                                         Download Movie
                                     </Button>
@@ -128,14 +135,13 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                             </div>
                         </div>
 
-                        {isMovieType && torrents && (
-                            <TorrentsModal
-                                isOpen={showTorrents}
-                                onClose={() => setShowTorrents(false)}
-                                torrents={torrents || []}
-                                movieTitle={title}
-                            />
-                        )}
+                        <TorrentsModal
+                            isOpen={showTorrents}
+                            onClose={() => setShowTorrents(false)}
+                            torrents={torrents || []}
+                            movieTitle={title}
+                            mediaType={type}
+                        />
 
                         <div className="md:col-span-2 lg:col-span-3">
                             <div>
@@ -147,10 +153,15 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                     ))}
                                 </div>
 
-                                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">{title}</h1>
+                                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">
+                                    {title}
+                                </h1>
 
                                 {data.tagline &&
-                                    <p className="mt-2 text-lg italic text-muted-foreground">{data.tagline}</p>}
+                                    <p className="mt-2 text-lg italic text-muted-foreground">
+                                        {data.tagline}
+                                    </p>
+                                }
 
                                 <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
                                     {releaseDate && (
