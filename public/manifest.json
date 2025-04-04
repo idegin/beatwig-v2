@@ -4,8 +4,8 @@
   "description": "An advanced and beautiful movie website with images, trailers and info about movies",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#EE1447",
+  "theme_color": "#EE1447",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
