@@ -33,6 +33,7 @@ export default async function WatchTVShowPage({params}: Props) {
     return (
         <>
             <MediaPlayer
+                mediaDetails={tvDetails}
                 //@ts-ignore
                 mediaId={params.id}
                 mediaType="tv"

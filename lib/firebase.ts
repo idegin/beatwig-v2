@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, query, where, getDocs, arrayUnion, arrayRemove } from "@firebase/firestore";
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, query, where, getDocs, arrayUnion, arrayRemove, serverTimestamp, Timestamp } from "@firebase/firestore";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import { Movie, TVShow } from "@/lib/tmdb";
+import { Movie, TVShow, getMovieDetails, getTVShowDetails } from "@/lib/tmdb";
+import { MEDIA_TYPES, PROGRESS_THRESHOLDS, WATCH_STATUS } from "@/lib/constants";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_API_URL,
@@ -23,13 +24,31 @@ export const dbCollectionName = {
     WATCHED_MOVIE: 'watched_movies',
     FILM_BOOKMARK: 'film_bookmarks',
     WATCHLIST: 'watchlist',
+    WATCH_HISTORY: 'watch_history',
 }
 
 export type WatchlistItem = {
     users_ids: string[];
     id: number;
     media_type: "movie" | "tv";
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
 } & (Movie | TVShow);
+
+export interface WatchHistoryItem {
+    id: number;
+    userId: string;
+    mediaId: number;
+    mediaType: "movie" | "tv";
+    progress: number;
+    duration?: number;
+    lastWatched: Timestamp;
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+    seasonNumber?: number;
+    episodeNumber?: number;
+    episodeName?: string;
+}
 
 /**
  * Get the currently logged in user
@@ -108,7 +127,8 @@ export const addToWatchlist = async (
             
             // Add user to the existing watchlist item
             await updateDoc(docRef, {
-                users_ids: arrayUnion(userId)
+                users_ids: arrayUnion(userId),
+                updatedAt: serverTimestamp()
             });
             return { success: true, message: "Added to your watchlist" };
         } else {
@@ -120,6 +140,8 @@ export const addToWatchlist = async (
                 ...cleanedItem,
                 media_type: mediaType,
                 users_ids: [userId],
+                createdAt: serverTimestamp() as Timestamp,
+                updatedAt: serverTimestamp() as Timestamp,
             };
             
             await setDoc(docRef, watchlistItem);
@@ -165,7 +187,8 @@ export const removeFromWatchlist = async (
         
         // Remove user from the watchlist item
         await updateDoc(docRef, {
-            users_ids: arrayRemove(userId)
+            users_ids: arrayRemove(userId),
+            updatedAt: serverTimestamp()
         });
         
         // Optionally: If no users remain, you could delete the document
@@ -174,7 +197,11 @@ export const removeFromWatchlist = async (
         const updatedData = updatedDoc.data() as WatchlistItem;
         
         if (updatedData.users_ids.length === 0) {
-            await setDoc(docRef, { ...updatedData, deletedAt: new Date() });
+            await setDoc(docRef, { 
+                ...updatedData, 
+                deletedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
         }
         
         return { success: true, message: "Removed from your watchlist" };
@@ -247,10 +274,191 @@ export const isInWatchlist = async (itemId: number | string): Promise<boolean> =
     }
 };
 
-export const saveWatchHistory = async (media: (TVShow | Movie), progress:number) => {
-    /**
-     * - Check if the user is logged in
-     * - check if the movie already exists for that user
-     * -
-     */
-}
+/**
+ * Save or update a user's watch progress for a movie or TV show
+ * @param media - The movie or TV show being watched
+ * @param progress - Current progress value between 0-100
+ * @param episodeInfo - Optional episode information for TV shows
+ * @param duration - Optional total duration in minutes
+ * @returns Promise with success status and message
+ */
+export const saveWatchHistory = async (
+    media: Movie | TVShow, 
+    progress: number, 
+    episodeInfo?: { 
+        season: number, 
+        episode: number, 
+        name: string 
+    },
+    duration?: number
+): Promise<{ success: boolean; message: string }> => {
+    try {
+        // Check if user is logged in
+        const currentUser = await getCurrentUser();
+        
+        if (!currentUser) {
+            return { success: false, message: "User not logged in" };
+        }
+        
+        const userId = currentUser.uid;
+        const mediaType = 'title' in media ? MEDIA_TYPES.MOVIE : MEDIA_TYPES.TV;
+        const mediaId = media.id;
+        
+        // Create a unique ID for the watch history document
+        // For movies: userId_mediaId
+        // For TV episodes: userId_mediaId_season_episode
+        let docId = `${userId}_${mediaId}`;
+        if (mediaType === MEDIA_TYPES.TV && episodeInfo) {
+            docId = `${userId}_${mediaId}_${episodeInfo.season}_${episodeInfo.episode}`;
+        }
+        
+        const historyRef = collection(db, dbCollectionName.WATCH_HISTORY);
+        const docRef = doc(historyRef, docId);
+        
+        // Check if the document already exists
+        const docSnap = await getDoc(docRef);
+        
+        const now = serverTimestamp() as Timestamp;
+        
+        if (docSnap.exists()) {
+            // Only update if the progress is greater than the existing progress
+            // This prevents overwriting progress if the user watches the same media in multiple tabs/devices
+            const existingData = docSnap.data() as WatchHistoryItem;
+            if (progress > existingData.progress) {
+                // Update existing watch history entry
+                await updateDoc(docRef, {
+                    progress,
+                    lastWatched: now,
+                    updatedAt: now,
+                    ...(duration && { duration }),
+                    ...(episodeInfo && {
+                        seasonNumber: episodeInfo.season,
+                        episodeNumber: episodeInfo.episode,
+                        episodeName: episodeInfo.name
+                    })
+                });
+            } else {
+                // Just update the lastWatched timestamp
+                await updateDoc(docRef, {
+                    lastWatched: now,
+                    updatedAt: now
+                });
+            }
+            return { success: true, message: "Watch progress updated" };
+        } else {
+            // Create new watch history entry
+            const historyItem: WatchHistoryItem = {
+                id: Date.now(), // Unique id for the history item
+                userId,
+                mediaId,
+                //@ts-ignore
+                mediaType,
+                progress,
+                lastWatched: now,
+                createdAt: now,
+                updatedAt: now,
+                ...(duration && { duration }),
+                ...(episodeInfo && {
+                    seasonNumber: episodeInfo.season,
+                    episodeNumber: episodeInfo.episode,
+                    episodeName: episodeInfo.name
+                })
+            };
+            
+            await setDoc(docRef, historyItem);
+            return { success: true, message: "Watch history created" };
+        }
+    } catch (error) {
+        console.error("Error saving watch history:", error);
+        return { success: false, message: "Failed to save watch progress" };
+    }
+};
+
+/**
+ * Get the user's watch history
+ * @param limit - Maximum number of items to return
+ * @returns Promise with the user's watch history items
+ */
+export const getUserWatchHistory = async (limit = 20): Promise<WatchHistoryItem[]> => {
+    try {
+        const currentUser = await getCurrentUser();
+        
+        if (!currentUser) {
+            return [];
+        }
+        
+        const userId = currentUser.uid;
+        const historyRef = collection(db, dbCollectionName.WATCH_HISTORY);
+        
+        // Query for watch history items for this user, sorted by lastWatched (descending)
+        const q = query(
+            historyRef, 
+            where("userId", "==", userId)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        const historyItems: WatchHistoryItem[] = [];
+        
+        querySnapshot.forEach((doc) => {
+            historyItems.push(doc.data() as WatchHistoryItem);
+        });
+        
+        // Sort by lastWatched timestamp (newest first) and limit results
+        return historyItems
+            .sort((a, b) => b.lastWatched.seconds - a.lastWatched.seconds)
+            .slice(0, limit);
+    } catch (error) {
+        console.error("Error getting watch history:", error);
+        return [];
+    }
+};
+
+/**
+ * Get the user's watch history with media details
+ * @param limit - Maximum number of items to return
+ * @returns Promise with the user's watch history items including media details
+ */
+export const getWatchHistoryWithMedia = async (limit = 20) => {
+    try {
+        const historyItems = await getUserWatchHistory(limit);
+        
+        if (!historyItems.length) return [];
+        
+        // Fetch the media details for each history item
+        const itemsWithMedia = await Promise.all(
+            historyItems.map(async (item) => {
+                try {
+                    let media;
+                    if (item.mediaType === MEDIA_TYPES.MOVIE) {
+                        media = await getMovieDetails(item.mediaId.toString());
+                    } else {
+                        media = await getTVShowDetails(item.mediaId.toString());
+                    }
+                    
+                    const episodeInfo = item.seasonNumber !== undefined ? {
+                        season: item.seasonNumber,
+                        episode: item.episodeNumber || 0,
+                        name: item.episodeName || ''
+                    } : undefined;
+                    
+                    return {
+                        media,
+                        progress: item.progress,
+                        episodeInfo
+                    };
+                } catch (error) {
+                    console.error("Error fetching media details for history item:", error);
+                    return null;
+                }
+            })
+        );
+        
+        // Filter out items where media details couldn't be fetched
+        return itemsWithMedia.filter(Boolean);
+    } catch (error) {
+        console.error("Error getting watch history with media details:", error);
+        return [];
+    }
+};
+

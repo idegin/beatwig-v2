@@ -21,7 +21,7 @@ export async function generateMetadata({params}: Props): Promise<Metadata> {
     }
 }
 
-export default async function WatchPage({params}: Props) {
+export default async function MovieWatchPage({params}: Props) {
     //@ts-ignore
     const [movieDetails, videosData] = await Promise.all([getMovieDetails(params.id), getMovieVideos(params.id)])
 
@@ -32,6 +32,7 @@ export default async function WatchPage({params}: Props) {
 
     return (
         <MediaPlayer
+            mediaDetails={movieDetails}
             //@ts-ignore
             mediaId={params.id}
             mediaType="movie"

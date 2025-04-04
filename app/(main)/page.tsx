@@ -2,6 +2,7 @@ import {SiteHeader} from "@/components/site-header"
 import {HeroCarousel} from "@/components/hero-carousel"
 import {MediaSection} from "@/components/media-section"
 import {GenreSection} from "@/components/genre-section"
+import ContinueWatchingSection from "@/components/continue-watching-section"
 import {
     getTrendingMovies,
     getTrendingTVShows,
@@ -14,6 +15,7 @@ import {
     getMovieGenres,
     getTVGenres,
 } from "@/lib/tmdb"
+import { getWatchHistoryWithMedia } from "@/lib/firebase"
 import type {Metadata} from "next"
 import {SITE_DESCRIPTION, SITE_NAME} from "@/lib/constants";
 
@@ -35,7 +37,7 @@ export const metadata: Metadata = {
     },
 }
 
-export default async function Home() {
+export default async function HomePage() {
     try {
         const [
             trendingMoviesData,
@@ -47,6 +49,7 @@ export default async function Home() {
             nowPlayingMoviesData,
             movieGenresData,
             tvGenresData,
+            watchHistory,
         ] = await Promise.all([
             getTrendingMovies("day").catch(() => ({results: []})),
             getTrendingTVShows("day").catch(() => ({results: []})),
@@ -57,6 +60,7 @@ export default async function Home() {
             getNowPlayingMovies().catch(() => ({results: []})),
             getMovieGenres().catch(() => ({genres: []})),
             getTVGenres().catch(() => ({genres: []})),
+            getWatchHistoryWithMedia(6).catch(() => []),
         ])
 
         const trendingMovies = trendingMoviesData?.results || []
@@ -80,6 +84,14 @@ export default async function Home() {
                 {heroMovies.length > 0 && <HeroCarousel items={heroMovies}/>}
 
                 <div className="pb-16 pt-8">
+                    {watchHistory.length > 0 && (
+                        <ContinueWatchingSection 
+                            title="Continue Watching" 
+                            viewAllHref="/history" 
+                            items={watchHistory as any}
+                        />
+                    )}
+
                     {trendingMovies.length > 0 && (
                         <MediaSection title="Trending Movies" viewAllHref="/movies/trending"
                                       items={trendingMovies.slice(0, 12)}/>
@@ -143,4 +155,3 @@ export default async function Home() {
         )
     }
 }
-

@@ -30,3 +30,21 @@ export const MEDIA_TYPES = {
   PERSON: "person",
 }
 
+export const WATCH_STATUS = {
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+}
+
+// Progress thresholds
+export const PROGRESS_THRESHOLDS = {
+  COMPLETED: 90, // Progress >= 90% is considered complete
+  STARTED: 3,    // Progress >= 3% is considered started
+}
+
+// Watch history constants
+export const WATCH_HISTORY = {
+  SAVE_INTERVAL: 10000, // Save progress every 10 seconds
+  DEFAULT_MOVIE_DURATION: 120, // Default movie duration in minutes
+  DEFAULT_EPISODE_DURATION: 45, // Default TV episode duration in minutes
+}
