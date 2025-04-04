@@ -171,7 +171,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                 <TabsList className="grid grid-cols-4 md:w-auto md:inline-flex">
                                     <TabsTrigger value="overview">Overview</TabsTrigger>
                                     <TabsTrigger value="cast">Cast & Crew</TabsTrigger>
-                                    <TabsTrigger value="media">Media</TabsTrigger>
+                                    <TabsTrigger value="media">Trailers</TabsTrigger>
                                     <TabsTrigger value="reviews">Reviews</TabsTrigger>
                                 </TabsList>
 

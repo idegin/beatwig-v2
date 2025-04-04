@@ -246,3 +246,11 @@ export const isInWatchlist = async (itemId: number | string): Promise<boolean> =
         return false;
     }
 };
+
+export const saveWatchHistory = async (media: (TVShow | Movie), progress:number) => {
+    /**
+     * - Check if the user is logged in
+     * - check if the movie already exists for that user
+     * -
+     */
+}
