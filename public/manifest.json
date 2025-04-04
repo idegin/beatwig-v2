@@ -1,7 +1,7 @@
 {
-  "name": "BeatWig Movie Website",
+  "name": "BeatWig",
   "short_name": "BeatWig",
-  "description": "An advanced and beautiful movie website with images, trailers and info about movies",
+  "description": "An online movie streaming platform with a wide range of movies and TV shows.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#EE1447",
@@ -28,7 +28,17 @@
       "form_factor": "wide"
     },
     {
-      "src": "/screenshots/mobile.png",
+      "src": "/screenshots/mobile1.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/mobile2.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/mobile3.png",
       "sizes": "750x1334",
       "type": "image/png"
     }
