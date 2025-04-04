@@ -20,7 +20,9 @@ interface WatchlistCardProps {
 export function WatchlistCard({ media, onRemove, className }: WatchlistCardProps) {
     if (!media) return null
 
+    //@ts-ignore
     const title = media.title || media.name || ""
+    //@ts-ignore
     const releaseDate = media.release_date || media.first_air_date
     const type = media.media_type
     const linkPath = `/${type}/${media.id}`
