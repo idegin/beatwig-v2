@@ -12,7 +12,7 @@ export function GenreSection({ title, genres, type }: GenreSectionProps) {
   if (!genres || genres.length === 0) return null
 
   return (
-    <section className="py-8 media-section">
+    <section className="py-8 media-section flex justify-center">
       <div className="container">
         <h2 className="text-2xl font-bold mb-6">{title}</h2>
 

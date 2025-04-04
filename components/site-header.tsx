@@ -117,7 +117,7 @@ export function SiteHeader() {
         <div className="container flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <img src={'/logo.jpg'} alt={'logo'} width={25} />
+            <img src={'/logo.webp'} alt={'logo'} width={35} className={'rounded-lg'} />
             <span className="text-xl font-bold">{SITE_NAME}</span>
           </Link>
 

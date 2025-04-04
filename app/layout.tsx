@@ -37,7 +37,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="flex min-h-screen flex-col">
             <main className="flex-1">{children}</main>
-            <Footer />
+            {/*<Footer />*/}
           </div>
         </ThemeProvider>
       </body>
