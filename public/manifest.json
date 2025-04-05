@@ -6,6 +6,9 @@
   "display": "standalone",
   "background_color": "#EE1447",
   "theme_color": "#EE1447",
+  "categories": ["entertainment", "video", "movies"],
+  "dir": "ltr",
+  "lang": "en-US",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
