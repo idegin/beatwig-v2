@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, query, where, getDocs, arrayUnion, arrayRemove, serverTimestamp, Timestamp } from "@firebase/firestore";
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, query, where, getDocs, arrayUnion, arrayRemove, serverTimestamp, Timestamp, orderBy, limit } from "@firebase/firestore";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { Movie, TVShow, getMovieDetails, getTVShowDetails } from "@/lib/tmdb";
 import { MEDIA_TYPES, PROGRESS_THRESHOLDS, WATCH_STATUS } from "@/lib/constants";
@@ -36,7 +36,7 @@ export type WatchlistItem = {
 } & (Movie | TVShow);
 
 export interface WatchHistoryItem {
-    id: number;
+    id: string; // Changed to string format: userId-mediaId
     userId: string;
     mediaId: number;
     mediaType: "movie" | "tv";
@@ -48,6 +48,10 @@ export interface WatchHistoryItem {
     seasonNumber?: number;
     episodeNumber?: number;
     episodeName?: string;
+    // Adding media details to save with the history
+    title: string;
+    poster_path?: string | null;
+    backdrop_path?: string | null;
 }
 
 /**
@@ -304,28 +308,26 @@ export const saveWatchHistory = async (
         const mediaType = 'title' in media ? MEDIA_TYPES.MOVIE : MEDIA_TYPES.TV;
         const mediaId = media.id;
         
-        // Create a unique ID for the watch history document
-        // For movies: userId_mediaId
-        // For TV episodes: userId_mediaId_season_episode
-        let docId = `${userId}_${mediaId}`;
+        // Create a unique ID for the watch history document in format userId-mediaId
+        let docId = `${userId}-${mediaId}`;
         if (mediaType === MEDIA_TYPES.TV && episodeInfo) {
-            docId = `${userId}_${mediaId}_${episodeInfo.season}_${episodeInfo.episode}`;
+            docId = `${userId}-${mediaId}-${episodeInfo.season}-${episodeInfo.episode}`;
         }
         
         const historyRef = collection(db, dbCollectionName.WATCH_HISTORY);
         const docRef = doc(historyRef, docId);
         
-        // Check if the document already exists
         const docSnap = await getDoc(docRef);
         
         const now = serverTimestamp() as Timestamp;
         
+        const title = 'title' in media ? media.title : media.name;
+        const poster_path = media.poster_path;
+        const backdrop_path = media.backdrop_path;
+        
         if (docSnap.exists()) {
-            // Only update if the progress is greater than the existing progress
-            // This prevents overwriting progress if the user watches the same media in multiple tabs/devices
             const existingData = docSnap.data() as WatchHistoryItem;
             if (progress > existingData.progress) {
-                // Update existing watch history entry
                 await updateDoc(docRef, {
                     progress,
                     lastWatched: now,
@@ -335,10 +337,12 @@ export const saveWatchHistory = async (
                         seasonNumber: episodeInfo.season,
                         episodeNumber: episodeInfo.episode,
                         episodeName: episodeInfo.name
-                    })
+                    }),
+                    title,
+                    poster_path,
+                    backdrop_path
                 });
             } else {
-                // Just update the lastWatched timestamp
                 await updateDoc(docRef, {
                     lastWatched: now,
                     updatedAt: now
@@ -348,7 +352,7 @@ export const saveWatchHistory = async (
         } else {
             // Create new watch history entry
             const historyItem: WatchHistoryItem = {
-                id: Date.now(), // Unique id for the history item
+                id: docId,
                 userId,
                 mediaId,
                 //@ts-ignore
@@ -357,6 +361,9 @@ export const saveWatchHistory = async (
                 lastWatched: now,
                 createdAt: now,
                 updatedAt: now,
+                title,
+                poster_path,
+                backdrop_path,
                 ...(duration && { duration }),
                 ...(episodeInfo && {
                     seasonNumber: episodeInfo.season,
@@ -376,10 +383,10 @@ export const saveWatchHistory = async (
 
 /**
  * Get the user's watch history
- * @param limit - Maximum number of items to return
+ * @param limit Number of history items to return
  * @returns Promise with the user's watch history items
  */
-export const getUserWatchHistory = async (limit = 20): Promise<WatchHistoryItem[]> => {
+export const getUserWatchHistory = async (limitCount = 6): Promise<WatchHistoryItem[]> => {
     try {
         const currentUser = await getCurrentUser();
         
@@ -390,10 +397,12 @@ export const getUserWatchHistory = async (limit = 20): Promise<WatchHistoryItem[
         const userId = currentUser.uid;
         const historyRef = collection(db, dbCollectionName.WATCH_HISTORY);
         
-        // Query for watch history items for this user, sorted by lastWatched (descending)
+        // Query for all history items for the current user, sorted by updatedAt
         const q = query(
             historyRef, 
-            where("userId", "==", userId)
+            where("userId", "==", userId), 
+            orderBy("updatedAt", "desc"), 
+            limit(limitCount)
         );
         
         const querySnapshot = await getDocs(q);
@@ -404,61 +413,9 @@ export const getUserWatchHistory = async (limit = 20): Promise<WatchHistoryItem[
             historyItems.push(doc.data() as WatchHistoryItem);
         });
         
-        // Sort by lastWatched timestamp (newest first) and limit results
-        return historyItems
-            .sort((a, b) => b.lastWatched.seconds - a.lastWatched.seconds)
-            .slice(0, limit);
+        return historyItems;
     } catch (error) {
         console.error("Error getting watch history:", error);
         return [];
     }
 };
-
-/**
- * Get the user's watch history with media details
- * @param limit - Maximum number of items to return
- * @returns Promise with the user's watch history items including media details
- */
-export const getWatchHistoryWithMedia = async (limit = 20) => {
-    try {
-        const historyItems = await getUserWatchHistory(limit);
-        
-        if (!historyItems.length) return [];
-        
-        // Fetch the media details for each history item
-        const itemsWithMedia = await Promise.all(
-            historyItems.map(async (item) => {
-                try {
-                    let media;
-                    if (item.mediaType === MEDIA_TYPES.MOVIE) {
-                        media = await getMovieDetails(item.mediaId.toString());
-                    } else {
-                        media = await getTVShowDetails(item.mediaId.toString());
-                    }
-                    
-                    const episodeInfo = item.seasonNumber !== undefined ? {
-                        season: item.seasonNumber,
-                        episode: item.episodeNumber || 0,
-                        name: item.episodeName || ''
-                    } : undefined;
-                    
-                    return {
-                        media,
-                        progress: item.progress,
-                        episodeInfo
-                    };
-                } catch (error) {
-                    console.error("Error fetching media details for history item:", error);
-                    return null;
-                }
-            })
-        );
-        
-        // Filter out items where media details couldn't be fetched
-        return itemsWithMedia.filter(Boolean);
-    } catch (error) {
-        console.error("Error getting watch history with media details:", error);
-        return [];
-    }
-};
-

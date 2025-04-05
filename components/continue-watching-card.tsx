@@ -29,8 +29,15 @@ export default function ContinueWatchingCard({
   if (!media) return null
 
   const title = getMediaTitle(media)
-  const type = isMovie(media) ? "movie" : "tv"
+  const type = media.media_type;
   const linkPath = `/${type}/${media.id}`
+  
+  // Add season and episode to link path for TV shows
+  const watchPath = `/${type}/${media.id}/watch${
+    type === "tv" && episodeInfo 
+      ? `?season=${episodeInfo.season}&episode=${episodeInfo.episode}` 
+      : ""
+  }`
 
   // Use backdrop for continue watching cards
   const backdropUrl = media.backdrop_path
@@ -38,7 +45,12 @@ export default function ContinueWatchingCard({
     : "/placeholder-wide.svg?height=300&width=500"
 
   return (
-    <Link href={linkPath} className="group relative block rounded-lg overflow-hidden">
+    <div className="group relative block rounded-lg overflow-hidden">
+      {/* Details link */}
+      <Link href={linkPath} className="absolute inset-0 z-10 opacity-0">
+        <span className="sr-only">View details for {title}</span>
+      </Link>
+      
       <div className="aspect-video w-full relative">
         <Image
           src={backdropUrl}
@@ -49,11 +61,12 @@ export default function ContinueWatchingCard({
           priority={priority}
         />
         <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors">
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="h-16 w-16 rounded-full bg-primary/80 flex items-center justify-center">
+          {/* Play button - links directly to the watch page */}
+          <Link href={watchPath} className="absolute inset-0 flex items-center justify-center z-20">
+            <div className="h-16 w-16 rounded-full bg-primary/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <Play className="h-8 w-8 text-white fill-white ml-1" />
             </div>
-          </div>
+          </Link>
           
           <div className="absolute bottom-0 left-0 right-0 p-4">
             <h3 className="text-xl font-bold text-white line-clamp-1">{title}</h3>
@@ -80,6 +93,6 @@ export default function ContinueWatchingCard({
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   )
 }

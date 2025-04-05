@@ -15,7 +15,6 @@ import {
     getMovieGenres,
     getTVGenres,
 } from "@/lib/tmdb"
-import { getWatchHistoryWithMedia } from "@/lib/firebase"
 import type {Metadata} from "next"
 import {SITE_DESCRIPTION, SITE_NAME} from "@/lib/constants";
 
@@ -26,7 +25,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: `${SITE_NAME} - Stream Movies and TV Shows Online`,
         description: SITE_DESCRIPTION,
-        url: "https://beatwig.vercel.app",
+        url: "https://beatwig.site",
         siteName: "BeatWig",
         type: "website",
     },
@@ -49,7 +48,6 @@ export default async function HomePage() {
             nowPlayingMoviesData,
             movieGenresData,
             tvGenresData,
-            watchHistory,
         ] = await Promise.all([
             getTrendingMovies("day").catch(() => ({results: []})),
             getTrendingTVShows("day").catch(() => ({results: []})),
@@ -60,7 +58,6 @@ export default async function HomePage() {
             getNowPlayingMovies().catch(() => ({results: []})),
             getMovieGenres().catch(() => ({genres: []})),
             getTVGenres().catch(() => ({genres: []})),
-            getWatchHistoryWithMedia(6).catch(() => []),
         ])
 
         const trendingMovies = trendingMoviesData?.results || []
@@ -74,7 +71,7 @@ export default async function HomePage() {
         const tvGenres = tvGenresData?.genres || []
 
         const heroMovies = trendingMovies
-            .filter((movie) => movie.backdrop_path && movie.overview && movie.vote_average >= 6.5)
+            .filter((movie:any) => movie.backdrop_path && movie.overview && movie.vote_average >= 6.5)
             .slice(0, 7)
 
         return (
@@ -84,22 +81,25 @@ export default async function HomePage() {
                 {heroMovies.length > 0 && <HeroCarousel items={heroMovies}/>}
 
                 <div className="pb-16 pt-8">
-                    {watchHistory.length > 0 && (
-                        <ContinueWatchingSection 
-                            title="Continue Watching" 
-                            viewAllHref="/history" 
-                            items={watchHistory as any}
+                    <ContinueWatchingSection
+                        title="Continue Watching"
+                        viewAllHref="/history"
+                    />
+
+                    {trendingMovies.length > 0 && (
+                        <MediaSection
+                            title="Trending Movies"
+                            viewAllHref="/movies/trending"
+                            items={trendingMovies.slice(0, 12)}
                         />
                     )}
 
-                    {trendingMovies.length > 0 && (
-                        <MediaSection title="Trending Movies" viewAllHref="/movies/trending"
-                                      items={trendingMovies.slice(0, 12)}/>
-                    )}
-
                     {trendingTVShows.length > 0 && (
-                        <MediaSection title="Trending TV Shows" viewAllHref="/tv/trending"
-                                      items={trendingTVShows.slice(0, 12)}/>
+                        <MediaSection
+                            title="Trending TV Shows"
+                            viewAllHref="/tv/trending"
+                            items={trendingTVShows.slice(0, 12)}
+                        />
                     )}
 
                     {nowPlayingMovies.length > 0 && (

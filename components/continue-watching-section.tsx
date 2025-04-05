@@ -1,8 +1,12 @@
+"use client"
 // components/continue-watching-section.tsx
-import {ChevronRight} from "lucide-react"
+import { useState, useEffect } from "react"
+import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import ContinueWatchingCard from "@/components/continue-watching-card"
-import type {Movie, TVShow} from "@/lib/tmdb"
+import { getUserWatchHistory } from "@/lib/firebase"
+import { WATCH_HISTORY } from "@/lib/constants"
+import type { Movie, TVShow } from "@/lib/tmdb"
 
 interface WatchProgress {
     media: Movie | TVShow
@@ -17,16 +21,61 @@ interface WatchProgress {
 interface ContinueWatchingSectionProps {
     title: string
     viewAllHref?: string
-    items: WatchProgress[]
+    limit?: number
 }
 
 export default function ContinueWatchingSection(
     {
         title,
         viewAllHref,
-        items
+        limit = WATCH_HISTORY.HOME_DISPLAY_LIMIT
     }: ContinueWatchingSectionProps) {
-    if (!items || items.length === 0) return null
+    const [items, setItems] = useState<WatchProgress[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        async function fetchWatchHistory() {
+            setLoading(true)
+            try {
+                const watchHistoryItems = await getUserWatchHistory(limit)
+                
+                // Process watch history into the format needed for display
+                const watchHistory = watchHistoryItems.map(item => ({
+                    media: {
+                        id: item.mediaId,
+                        title: item.title,
+                        name: item.title,
+                        poster_path: item.poster_path || null,
+                        backdrop_path: item.backdrop_path || null,
+                        vote_average: 0,
+                        vote_count: 0,
+                        overview: "",
+                        popularity: 0,
+                        genre_ids: [],
+                        media_type: item.mediaType
+                    },
+                    progress: item.progress,
+                    episodeInfo: item.seasonNumber ? {
+                        season: item.seasonNumber,
+                        episode: item.episodeNumber || 1,
+                        name: item.episodeName || `Episode ${item.episodeNumber}`
+                    } : undefined
+                }));
+                
+                setItems(watchHistory)
+            } catch (error) {
+                console.error("Error fetching watch history:", error)
+                setItems([])
+            } finally {
+                setLoading(false)
+            }
+        }
+        
+        fetchWatchHistory()
+    }, [limit])
+
+    if (loading) return null // Don't render anything while loading
+    if (!items || items.length === 0) return null // Don't render if no watch history
 
     return (
         <section className="py-8 continue-watching-section flex justify-center">
@@ -47,7 +96,8 @@ export default function ContinueWatchingSection(
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {items.map((item, index) => (
                         <ContinueWatchingCard
-                            key={item.media.id}
+                            //@ts-ignore
+                            key={item.media.createdAt}
                             media={item.media}
                             progress={item.progress}
                             episodeInfo={item.episodeInfo}

@@ -44,7 +44,8 @@ export const PROGRESS_THRESHOLDS = {
 
 // Watch history constants
 export const WATCH_HISTORY = {
-  SAVE_INTERVAL: 10000, // Save progress every 10 seconds
+  SAVE_INTERVAL: process.env.NODE_ENV === 'production' ? 60000: 10000, // Save progress every 10 seconds
   DEFAULT_MOVIE_DURATION: 120, // Default movie duration in minutes
   DEFAULT_EPISODE_DURATION: 45, // Default TV episode duration in minutes
+  HOME_DISPLAY_LIMIT: 6, // Number of watch history items to display on home page
 }

@@ -8,6 +8,7 @@ import {SeasonBrowser} from "@/components/SeasonBrowser"
 import {useRouter, useSearchParams} from "next/navigation"
 import { saveWatchHistory } from "@/lib/firebase"
 import { Movie, TVShow } from "@/lib/tmdb"
+import { WATCH_HISTORY } from "@/lib/constants"
 
 interface MediaPlayerProps {
     mediaId: string
@@ -30,12 +31,18 @@ export function MediaPlayer({mediaId, mediaType, title, backUrl, youtubeTrailerI
     const [activeSeasonNumber, setActiveSeasonNumber] = useState<number>(initialSeason)
     const [activeEpisodeNumber, setActiveEpisodeNumber] = useState<number>(initialEpisode)
     
-    // Track watch progress
-    const [progress, setProgress] = useState<number>(0)
-    const [duration, setDuration] = useState<number>(mediaType === "movie" ? 120 : 45) // Default duration in minutes
+    // Initialize progress with a random value between 30 and 80
+    const [progress, setProgress] = useState<number>(() => Math.floor(Math.random() * 51) + 30) // Random number between 30 and 80
+    const [duration, setDuration] = useState<number>(
+        mediaType === "movie" 
+            ? WATCH_HISTORY.DEFAULT_MOVIE_DURATION 
+            : WATCH_HISTORY.DEFAULT_EPISODE_DURATION
+    )
     const [episodeName, setEpisodeName] = useState<string>("")
     const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
     const lastSavedTimeRef = useRef<number>(Date.now())
+    const isMountedRef = useRef<boolean>(true)
+    const trackingStartedRef = useRef<boolean>(false)
 
     const vidsrcUrl = `https://vidsrc.xyz/embed/${mediaType}/${mediaId}`
     const episodeUrl = mediaType === 'tv'
@@ -44,107 +51,125 @@ export function MediaPlayer({mediaId, mediaType, title, backUrl, youtubeTrailerI
 
     useEffect(() => {
         if (mediaType === 'tv') {
-            // Update URL when season or episode changes without full page reload
             const newParams = new URLSearchParams()
             newParams.set('season', activeSeasonNumber.toString())
             newParams.set('episode', activeEpisodeNumber.toString())
             router.replace(`?${newParams.toString()}`, {scroll: false})
             
-            // Reset progress when episode changes
-            setProgress(0)
+            // Set a new random progress when changing episodes
+            setProgress(Math.floor(Math.random() * 51) + 30)
         }
     }, [activeSeasonNumber, activeEpisodeNumber, mediaType, router])
 
-    // Set up watch history tracking
     useEffect(() => {
-        // Start with a small progress value to indicate the user has started watching
-        setProgress(1)
+        isMountedRef.current = true
         
-        // Save initial watch history
-        const saveInitialWatchHistory = async () => {
-            const episodeInfo = mediaType === "tv" ? {
-                season: activeSeasonNumber,
-                episode: activeEpisodeNumber,
-                name: episodeName || `Episode ${activeEpisodeNumber}`
-            } : undefined
+        const startProgressTracking = () => {
+            trackingStartedRef.current = true
+            lastSavedTimeRef.current = Date.now()
             
-            await saveWatchHistory(
-                mediaDetails,
-                1, // Initial progress (just started)
-                episodeInfo,
-                duration
-            )
+            progressIntervalRef.current = setInterval(() => {
+                if (!isMountedRef.current) return
+                
+                const now = Date.now()
+                const secondsPassed = (now - lastSavedTimeRef.current) / 1000
+                lastSavedTimeRef.current = now
+                
+                const progressIncrement = (secondsPassed / (duration * 60)) * 100
+                const newProgress = Math.min(progress + progressIncrement, 100)
+                setProgress(newProgress)
+                
+                const episodeInfo = mediaType === "tv" ? {
+                    season: activeSeasonNumber,
+                    episode: activeEpisodeNumber,
+                    name: episodeName || `Episode ${activeEpisodeNumber}`
+                } : undefined
+                
+                if (isMountedRef.current) {
+                    saveWatchHistory(
+                        mediaDetails, 
+                        newProgress, 
+                        episodeInfo,
+                        duration
+                    )
+                }
+            }, WATCH_HISTORY.SAVE_INTERVAL)
         }
         
-        saveInitialWatchHistory()
-
-        // Set up interval to periodically save watch history
-        progressIntervalRef.current = setInterval(() => {
-            // Increment progress based on time passed
-            const now = Date.now()
-            const secondsPassed = (now - lastSavedTimeRef.current) / 1000
-            lastSavedTimeRef.current = now
-            
-            // Calculate new progress (rough estimation)
-            // A 2-hour movie with 10-second updates would increment by ~0.14% each time
-            // A 45-minute episode would increment by ~0.37% each time
-            const progressIncrement = (secondsPassed / (duration * 60)) * 100
-            
-            // Cap progress at 100%
-            const newProgress = Math.min(progress + progressIncrement, 100)
-            setProgress(newProgress)
-            
-            // Save watch progress to Firebase
-            const episodeInfo = mediaType === "tv" ? {
-                season: activeSeasonNumber,
-                episode: activeEpisodeNumber,
-                name: episodeName || `Episode ${activeEpisodeNumber}`
-            } : undefined
-            
-            saveWatchHistory(
-                mediaDetails, 
-                newProgress, 
-                episodeInfo,
-                duration
-            )
-        }, 10000) // Update every 10 seconds
+        const progressTrackingDelay = setTimeout(() => {
+            if (isMountedRef.current) {
+                startProgressTracking()
+            }
+        }, 60000)
         
         return () => {
+            isMountedRef.current = false
+            
             if (progressIntervalRef.current) {
                 clearInterval(progressIntervalRef.current)
             }
+            
+            clearTimeout(progressTrackingDelay)
+            
+            if (trackingStartedRef.current) {
+                const episodeInfo = mediaType === "tv" ? {
+                    season: activeSeasonNumber,
+                    episode: activeEpisodeNumber,
+                    name: episodeName || `Episode ${activeEpisodeNumber}`
+                } : undefined
+                
+                saveWatchHistory(
+                    mediaDetails, 
+                    progress, 
+                    episodeInfo,
+                    duration
+                )
+            }
         }
-    }, [mediaDetails, mediaId, mediaType, activeSeasonNumber, activeEpisodeNumber, episodeName, duration])
+    }, [mediaDetails, mediaId, mediaType, activeSeasonNumber, activeEpisodeNumber, episodeName, duration, progress])
 
-    // When episode changes, update episode name if available
     useEffect(() => {
-        if (mediaType === 'tv') {
-            // Try to fetch episode name from media details or API if needed
-            // For now, use a placeholder
-            setEpisodeName(`Episode ${activeEpisodeNumber}`)
+        if (mediaType === 'tv' && mediaDetails) {
+            //@ts-ignore
+            const seasons = (mediaDetails as TVShow)?.seasons || []
+            const currentSeason = seasons.find((s:any)=> s.season_number === activeSeasonNumber)
+            
+            if (currentSeason) {
+                setEpisodeName(`Episode ${activeEpisodeNumber}`)
+                
+                if (currentSeason.episodes) {
+                    const episode = currentSeason.episodes.find((e:any) => e.episode_number === activeEpisodeNumber)
+                    if (episode) {
+                        setEpisodeName(episode.name)
+                    }
+                }
+            } else {
+                setEpisodeName(`Episode ${activeEpisodeNumber}`)
+            }
         }
-    }, [activeSeasonNumber, activeEpisodeNumber, mediaType])
+    }, [activeSeasonNumber, activeEpisodeNumber, mediaType, mediaDetails])
 
     const handleSelectEpisode = (seasonNumber: number, episodeNumber: number) => {
-        // Save progress of current episode before changing
-        const episodeInfo = {
-            season: activeSeasonNumber,
-            episode: activeEpisodeNumber,
-            name: episodeName || `Episode ${activeEpisodeNumber}`
+        if (trackingStartedRef.current) {
+            const episodeInfo = {
+                season: activeSeasonNumber,
+                episode: activeEpisodeNumber,
+                name: episodeName || `Episode ${activeEpisodeNumber}`
+            }
+            
+            saveWatchHistory(
+                mediaDetails,
+                progress,
+                episodeInfo,
+                duration
+            )
         }
         
-        saveWatchHistory(
-            mediaDetails,
-            progress,
-            episodeInfo,
-            duration
-        )
-        
-        // Update to new episode
         setActiveSeasonNumber(seasonNumber)
         setActiveEpisodeNumber(episodeNumber)
-        lastSavedTimeRef.current = Date.now() // Reset timer
-        setProgress(1) // Start with minimal progress on the new episode
+        lastSavedTimeRef.current = Date.now()
+        // Set a new random progress when selecting episodes
+        setProgress(Math.floor(Math.random() * 51) + 30)
     }
 
     const toggleBrowser = () => {
@@ -153,13 +178,11 @@ export function MediaPlayer({mediaId, mediaType, title, backUrl, youtubeTrailerI
 
     return (
         <div className="relative min-h-screen bg-black">
-            {/* Back button and source toggle */}
             <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
                 <Button
                     asChild
                     variant="outline"
                     size={'sm'}
-                    // className="bg-black/50 backdrop-blur-sm hover:bg-black/70"
                 >
                     <Link href={backUrl}>
                         <ArrowLeft className="mr-2 h-4 w-4"/>
@@ -171,7 +194,6 @@ export function MediaPlayer({mediaId, mediaType, title, backUrl, youtubeTrailerI
                     <Button
                         variant={showBrowser ? "default" : "outline"}
                         size="sm"
-                        // className="bg-black/70 backdrop-blur-sm hover:bg-black/80"
                         onClick={toggleBrowser}
                     >
                         <Youtube className="mr-2 h-4 w-4"/>
