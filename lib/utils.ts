@@ -56,15 +56,6 @@ export function formatRating(rating: number): string {
   return (Math.round(rating * 10) / 10).toFixed(1)
 }
 
-/**
- * Get base URL for client-side use
- */
-export function getBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    return window.location.origin
-  }
-  return "https://beatwig.vercel.app"
-}
 
 /**
  * Truncate text to a specific length with ellipsis

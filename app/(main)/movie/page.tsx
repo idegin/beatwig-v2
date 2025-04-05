@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: `Movies - ${SITE_NAME}`,
         description: `Explore the latest movies, top-rated films, and movies playing in theaters.`,
-        url: "https://beatwig.vercel.app/movie",
+        url: "https://beatwig.site",
         siteName: SITE_NAME,
         type: "website",
     },

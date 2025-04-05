@@ -3,7 +3,7 @@ import { getPopularMovies } from "@/lib/tmdb"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Base URL for your site - using a default for server-side generation
-  const baseUrl = "https://beatwig.vercel.app"
+  const baseUrl = "https://beatwig.site"
 
   // Static routes
   const routes = [

@@ -27,7 +27,7 @@ const nextConfig = withPWA({
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'beatwig.vercel.app', 'beatwig-v2.vercel.app'],
+      allowedOrigins: ['localhost:3000', 'beta.beatwig.site', 'beatwig.site', 'beatwig.vercel.app', 'beatwig-v2.vercel.app'],
     },
   },
 })

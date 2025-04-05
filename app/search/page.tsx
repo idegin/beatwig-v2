@@ -32,7 +32,7 @@ export async function generateMetadata({searchParams}: Props): Promise<Metadata>
         openGraph: {
             title: `Search results for "${query}" | BeatWig`,
             description: `Find movies, TV shows, and people related to "${query}". Browse results and discover new content.`,
-            url: `https://beatwig.vercel.app/search?query=${encodeURIComponent(query)}`,
+            url: `https://beatwig.site/search?query=${encodeURIComponent(query)}`,
             siteName: "BeatWig",
             type: "website",
         },

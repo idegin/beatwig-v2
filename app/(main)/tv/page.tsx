@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: `TV Shows - ${SITE_NAME}`,
         description: `Explore the latest TV series, trending shows, and top-rated television content.`,
-        url: "https://beatwig.vercel.app/tv",
+        url: "https://beatwig.site/tv",
         siteName: SITE_NAME,
         type: "website",
     },
