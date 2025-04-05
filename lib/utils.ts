@@ -136,3 +136,37 @@ export function isPerson(media: Movie | TVShow | Person): media is Person {
   return "known_for_department" in media || media.media_type === "person"
 }
 
+export const getGenreColor = (genreName: string): string => {
+  const genreColors: Record<string, string> = {
+    Action: "from-red-500/20 to-red-800/20",
+    Adventure: "from-amber-500/20 to-amber-800/20",
+    Animation: "from-yellow-500/20 to-yellow-800/20",
+    Comedy: "from-lime-500/20 to-lime-800/20",
+    Crime: "from-blue-500/20 to-blue-800/20",
+    Documentary: "from-indigo-500/20 to-indigo-800/20",
+    Drama: "from-purple-500/20 to-purple-800/20",
+    Family: "from-pink-500/20 to-pink-800/20",
+    Fantasy: "from-teal-500/20 to-teal-800/20",
+    History: "from-orange-500/20 to-orange-800/20",
+    Horror: "from-red-900/20 to-black/40",
+    Music: "from-fuchsia-500/20 to-fuchsia-800/20",
+    Mystery: "from-violet-500/20 to-violet-800/20",
+    Romance: "from-rose-500/20 to-rose-800/20",
+    "Science Fiction": "from-cyan-500/20 to-cyan-800/20",
+    "TV Movie": "from-emerald-500/20 to-emerald-800/20",
+    Thriller: "from-slate-500/20 to-slate-800/20",
+    War: "from-stone-500/20 to-stone-800/20",
+    Western: "from-amber-700/20 to-amber-900/20",
+    // TV genres
+    "Action & Adventure": "from-red-500/20 to-amber-800/20",
+    Kids: "from-yellow-500/20 to-green-500/20",
+    News: "from-blue-500/20 to-blue-700/20",
+    Reality: "from-orange-500/20 to-red-500/20",
+    "Sci-Fi & Fantasy": "from-purple-500/20 to-blue-500/20",
+    Soap: "from-pink-500/20 to-red-300/20",
+    Talk: "from-green-500/20 to-green-700/20",
+    "War & Politics": "from-red-700/20 to-blue-700/20",
+  }
+
+  return genreColors[genreName] || "from-primary/20 to-primary/5"
+}

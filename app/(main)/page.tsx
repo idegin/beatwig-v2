@@ -47,7 +47,7 @@ export default async function HomePage() {
             topRatedTVShowsData,
             nowPlayingMoviesData,
             movieGenresData,
-            tvGenresData,
+            // tvGenresData,
         ] = await Promise.all([
             getTrendingMovies("day").catch(() => ({results: []})),
             getTrendingTVShows("day").catch(() => ({results: []})),
@@ -57,7 +57,7 @@ export default async function HomePage() {
             getTopRatedTVShows().catch(() => ({results: []})),
             getNowPlayingMovies().catch(() => ({results: []})),
             getMovieGenres().catch(() => ({genres: []})),
-            getTVGenres().catch(() => ({genres: []})),
+            // getTVGenres().catch(() => ({genres: []})),
         ])
 
         const trendingMovies = trendingMoviesData?.results || []
@@ -68,7 +68,7 @@ export default async function HomePage() {
         const topRatedTVShows = topRatedTVShowsData?.results || []
         const nowPlayingMovies = nowPlayingMoviesData?.results || []
         const movieGenres = movieGenresData?.genres || []
-        const tvGenres = tvGenresData?.genres || []
+        // const tvGenres = tvGenresData?.genres || []
 
         const heroMovies = trendingMovies
             .filter((movie:any) => movie.backdrop_path && movie.overview && movie.vote_average >= 6.5)
@@ -134,7 +134,7 @@ export default async function HomePage() {
 
                     {movieGenres.length > 0 && <GenreSection title="Movie Genres" genres={movieGenres} type="movie"/>}
 
-                    {tvGenres.length > 0 && <GenreSection title="TV Genres" genres={tvGenres} type="tv"/>}
+                    {/*{tvGenres.length > 0 && <GenreSection title="TV Genres" genres={tvGenres} type="tv"/>}*/}
                 </div>
             </>
         )

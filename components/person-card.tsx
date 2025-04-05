@@ -18,7 +18,7 @@ export function PersonCard({ person, priority = false }: PersonCardProps) {
     : "/placeholder.svg?height=450&width=300"
 
   return (
-    <Link href={`/person/${person.id}`} className="group movie-card">
+    <Link href={``} className="group movie-card">
       <div className="aspect-[2/3] w-full relative rounded-lg overflow-hidden">
         <Image
           src={profileUrl || "/placeholder.svg"}
