@@ -98,10 +98,12 @@ export default async function SearchPage({searchParams}: Props) {
                                 <Tv className="h-4 w-4"/>
                                 TV Shows ({tvShows.length})
                             </TabsTrigger>
-                            <TabsTrigger value="people" className="flex items-center gap-2">
-                                <Users className="h-4 w-4"/>
-                                People ({people.length})
-                            </TabsTrigger>
+                            {
+                                process.env.NODE_ENV === 'development' && <TabsTrigger value="people" className="flex items-center gap-2">
+                                    <Users className="h-4 w-4"/>
+                                    People ({people.length})
+                                </TabsTrigger>
+                            }
                         </TabsList>
 
                         <TabsContent value="all" className="space-y-12">
