@@ -18,7 +18,6 @@ export function MovieCard({ media, priority = false }: MovieCardProps) {
   const releaseDate = getMediaDate(media)
   const linkPath = isMovie(media) ? `/movie/${media.id}` : `/tv/${media.id}`
 
-  // Use placeholder if no poster is available
   const posterUrl = media.poster_path
     ? getTMDBImageUrl(media.poster_path, POSTER_SIZES.MEDIUM)
     : "/placeholder.svg?height=450&width=300"
@@ -26,13 +25,11 @@ export function MovieCard({ media, priority = false }: MovieCardProps) {
   return (
     <Link href={linkPath} className="group movie-card">
       <div className="aspect-[2/3] w-full relative rounded-lg overflow-hidden">
-        <Image
+        <img
           src={posterUrl || "/placeholder.svg"}
           alt={title}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          priority={priority}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading={priority ? "eager" : "lazy"}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="absolute bottom-0 left-0 right-0 p-4">

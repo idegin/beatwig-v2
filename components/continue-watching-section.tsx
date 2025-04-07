@@ -82,15 +82,15 @@ export default function ContinueWatchingSection(
             <div className="container">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold">{title}</h2>
-                    {viewAllHref && (
-                        <Link
-                            href={viewAllHref}
-                            className="flex items-center text-sm font-medium text-primary hover:underline"
-                        >
-                            View all
-                            <ChevronRight className="h-4 w-4 ml-1"/>
-                        </Link>
-                    )}
+                    {/*{viewAllHref && (*/}
+                    {/*    <Link*/}
+                    {/*        href={viewAllHref}*/}
+                    {/*        className="flex items-center text-sm font-medium text-primary hover:underline"*/}
+                    {/*    >*/}
+                    {/*        View all*/}
+                    {/*        <ChevronRight className="h-4 w-4 ml-1"/>*/}
+                    {/*    </Link>*/}
+                    {/*)}*/}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

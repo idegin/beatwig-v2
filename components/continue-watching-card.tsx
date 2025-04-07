@@ -52,13 +52,11 @@ export default function ContinueWatchingCard({
       </Link>
       
       <div className="aspect-video w-full relative">
-        <Image
+        <img
           src={backdropUrl}
           alt={title}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover"
-          priority={priority}
+          className="object-cover absolute inset-0 h-full w-full"
+          loading={priority ? "eager" : "lazy"}
         />
         <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors">
           {/* Play button - links directly to the watch page */}

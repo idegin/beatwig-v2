@@ -63,12 +63,11 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
     return (
         <div className="flex flex-col">
             <div className="relative h-[80vh] min-h-[500px] w-full overflow-hidden">
-                <Image
+                <img
                     src={backgroundImage || "/placeholder.svg"}
                     alt={title}
-                    fill
-                    priority
-                    className="object-cover"
+                    className="w-full h-full object-cover absolute inset-0"
+                    loading="eager"
                     onError={(e) => {
                         if (data.poster_path && e.currentTarget.src !== getTMDBImageUrl(data.poster_path, POSTER_SIZES.ORIGINAL)) {
                             e.currentTarget.src = getTMDBImageUrl(data.poster_path, POSTER_SIZES.ORIGINAL)
@@ -93,11 +92,11 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                         <div className="md:col-span-1">
                             <div className="sticky top-20">
                                 <div className="relative aspect-[2/3] w-full rounded-lg overflow-hidden shadow-lg">
-                                    <Image
+                                    <img
                                         src={getTMDBImageUrl(data.poster_path, POSTER_SIZES.LARGE) || "/placeholder.svg?height=450&width=300"}
                                         alt={title}
-                                        fill
-                                        className="object-cover"
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
                                     />
                                 </div>
 
