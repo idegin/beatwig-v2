@@ -147,6 +147,43 @@ export interface Episode {
   }[]
 }
 
+export interface Keyword {
+  id: number
+  name: string
+}
+
+export interface KeywordResponse {
+  id: number
+  name: string
+}
+
+export interface PersonDetails {
+  id: number
+  name: string
+  profile_path: string | null
+  biography: string
+  birthday: string | null
+  deathday: string | null
+  place_of_birth: string | null
+  known_for_department: string
+  gender: number
+  popularity: number
+  also_known_as: string[]
+  adult: boolean
+  imdb_id: string | null
+  homepage: string | null
+}
+
+export interface PersonCredits {
+  cast: (Movie & { character: string; credit_id: string })[]
+  crew: (Movie & { job: string; department: string; credit_id: string })[]
+}
+
+export interface PersonTVCredits {
+  cast: (TVShow & { character: string; credit_id: string; episode_count: number })[]
+  crew: (TVShow & { job: string; department: string; credit_id: string; episode_count: number })[]
+}
+
 export async function getTVShowSeasons(tvId: string) {
   const tvDetails = await fetchFromTMDB(`/tv/${tvId}`)
   return tvDetails.seasons as Season[]
@@ -300,4 +337,34 @@ export async function getOnTheAirTVShows(page = 1) {
 
 export async function getAiringTodayTVShows(page = 1) {
   return fetchFromTMDB("/tv/airing_today", { page: page.toString() }) as Promise<TVResponse>
+}
+
+export async function getPersonDetails(personId: string) {
+  return fetchFromTMDB(`/person/${personId}`) as Promise<PersonDetails>
+}
+
+export async function getPersonMovieCredits(personId: string) {
+  return fetchFromTMDB(`/person/${personId}/movie_credits`) as Promise<PersonCredits>
+}
+
+export async function getPersonTVCredits(personId: string) {
+  return fetchFromTMDB(`/person/${personId}/tv_credits`) as Promise<PersonTVCredits>
+}
+
+export async function getKeywordDetails(keywordId: string) {
+  return fetchFromTMDB(`/keyword/${keywordId}`) as Promise<KeywordResponse>
+}
+
+export async function getMoviesByKeyword(keywordId: string, page = 1) {
+  return fetchFromTMDB("/discover/movie", {
+    with_keywords: keywordId,
+    page: page.toString(),
+  }) as Promise<MovieResponse>
+}
+
+export async function getTVShowsByKeyword(keywordId: string, page = 1) {
+  return fetchFromTMDB("/discover/tv", {
+    with_keywords: keywordId,
+    page: page.toString(),
+  }) as Promise<TVResponse>
 }

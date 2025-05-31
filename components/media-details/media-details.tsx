@@ -1,17 +1,17 @@
 "use client"
 
-import {useState} from "react"
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import {Button} from "@/components/ui/button"
-import {Badge} from "@/components/ui/badge"
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs"
-import {ScrollArea} from "@/components/ui/scroll-area"
-import {getTMDBImageUrl, formatDate, formatRuntime, formatRating, formatNumber} from "@/lib/utils"
-import {BACKDROP_SIZES, POSTER_SIZES, PROFILE_SIZES} from "@/lib/constants"
-import {MediaSection} from "@/components/media-section"
-import {VideosGallery} from "@/components/videos-gallery"
-import {VideoPopup} from "@/components/video-popup"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { getTMDBImageUrl, formatDate, formatRuntime, formatRating, formatNumber } from "@/lib/utils"
+import { BACKDROP_SIZES, POSTER_SIZES, PROFILE_SIZES } from "@/lib/constants"
+import { MediaSection } from "@/components/media-section"
+import { VideosGallery } from "@/components/videos-gallery"
+import { VideoPopup } from "@/components/video-popup"
 import {
     Calendar,
     Clock,
@@ -23,7 +23,7 @@ import {
     Star,
     Tag
 } from "lucide-react"
-import {MovieTorrent} from "@/lib/yts";
+import { MovieTorrent } from "@/lib/yts";
 import MediaDetailsActions from "@/components/media-details/MediaDetailsActions";
 
 interface MediaDetailsProps {
@@ -32,7 +32,7 @@ interface MediaDetailsProps {
     torrents?: MovieTorrent[]
 }
 
-export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
+export function MediaDetails({ data, type, torrents }: MediaDetailsProps) {
     const [showTrailer, setShowTrailer] = useState(false);
 
     if (!data) return null
@@ -74,13 +74,13 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                         }
                     }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent"/>
-                <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent" />
 
                 <div className="absolute inset-0 flex items-center justify-center">
                     <Link href={watchUrl}
-                          className={'h-20 w-20 flex items-center justify-center rounded-full hover:bg-primary-foreground hover:text-primary bg-primary text-primary-foreground transition-colors duration-300'}>
-                        <Play className="h-8 w-8"/>
+                        className={'h-20 w-20 flex items-center justify-center rounded-full hover:bg-primary-foreground hover:text-primary bg-primary text-primary-foreground transition-colors duration-300'}>
+                        <Play className="h-8 w-8" />
                         <span className="sr-only">Watch</span>
                     </Link>
                 </div>
@@ -132,24 +132,24 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                 <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
                                     {releaseDate && (
                                         <div className="flex items-center gap-1">
-                                            <Calendar className="h-4 w-4 text-muted-foreground"/>
+                                            <Calendar className="h-4 w-4 text-muted-foreground" />
                                             <span>{formatDate(releaseDate)}</span>
                                         </div>
                                     )}
 
                                     {runtime > 0 && (
                                         <div className="flex items-center gap-1">
-                                            <Clock className="h-4 w-4 text-muted-foreground"/>
+                                            <Clock className="h-4 w-4 text-muted-foreground" />
                                             <span>{formatRuntime(runtime)}</span>
                                         </div>
                                     )}
 
                                     {data.vote_average > 0 && (
                                         <div className="flex items-center gap-1">
-                                            <Star className="h-4 w-4 text-yellow-500"/>
+                                            <Star className="h-4 w-4 text-yellow-500" />
                                             <span>
-                      {formatRating(data.vote_average)} ({formatNumber(data.vote_count)})
-                    </span>
+                                                {formatRating(data.vote_average)} ({formatNumber(data.vote_count)})
+                                            </span>
                                         </div>
                                     )}
 
@@ -157,10 +157,10 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
 
                                     {!isMovieType && data.number_of_seasons && (
                                         <div className="flex items-center gap-1">
-                                            <Film className="h-4 w-4 text-muted-foreground"/>
+                                            <Film className="h-4 w-4 text-muted-foreground" />
                                             <span>
-                      {data.number_of_seasons} {data.number_of_seasons === 1 ? "Season" : "Seasons"}
-                    </span>
+                                                {data.number_of_seasons} {data.number_of_seasons === 1 ? "Season" : "Seasons"}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -186,7 +186,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {isMovieType && data.budget > 0 && (
                                                     <div className="flex items-start gap-2">
-                                                        <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                                                        <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5" />
                                                         <div>
                                                             <h3 className="font-medium">Budget</h3>
                                                             <p className="text-muted-foreground">${formatNumber(data.budget)}</p>
@@ -196,7 +196,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
 
                                                 {isMovieType && data.revenue > 0 && (
                                                     <div className="flex items-start gap-2">
-                                                        <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                                                        <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5" />
                                                         <div>
                                                             <h3 className="font-medium">Revenue</h3>
                                                             <p className="text-muted-foreground">${formatNumber(data.revenue)}</p>
@@ -206,11 +206,11 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
 
                                                 {data.original_language && (
                                                     <div className="flex items-start gap-2">
-                                                        <Globe className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                                                        <Globe className="h-5 w-5 text-muted-foreground mt-0.5" />
                                                         <div>
                                                             <h3 className="font-medium">Original Language</h3>
                                                             <p className="text-muted-foreground">
-                                                                {new Intl.DisplayNames(["en"], {type: "language"}).of(data.original_language)}
+                                                                {new Intl.DisplayNames(["en"], { type: "language" }).of(data.original_language)}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -218,7 +218,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
 
                                                 {data.production_companies && data.production_companies.length > 0 && (
                                                     <div className="flex items-start gap-2">
-                                                        <Film className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                                                        <Film className="h-5 w-5 text-muted-foreground mt-0.5" />
                                                         <div>
                                                             <h3 className="font-medium">Production</h3>
                                                             <p className="text-muted-foreground">
@@ -230,7 +230,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
 
                                                 {!isMovieType && data.created_by && data.created_by.length > 0 && (
                                                     <div className="flex items-start gap-2">
-                                                        <Tag className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                                                        <Tag className="h-5 w-5 text-muted-foreground mt-0.5" />
                                                         <div>
                                                             <h3 className="font-medium">Created By</h3>
                                                             <p className="text-muted-foreground">
@@ -242,7 +242,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
 
                                                 {!isMovieType && data.networks && data.networks.length > 0 && (
                                                     <div className="flex items-start gap-2">
-                                                        <Film className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                                                        <Film className="h-5 w-5 text-muted-foreground mt-0.5" />
                                                         <div>
                                                             <h3 className="font-medium">Networks</h3>
                                                             <p className="text-muted-foreground">
@@ -254,7 +254,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
 
                                                 {data.homepage && (
                                                     <div className="flex items-start gap-2">
-                                                        <ExternalLink className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                                                        <ExternalLink className="h-5 w-5 text-muted-foreground mt-0.5" />
                                                         <div>
                                                             <h3 className="font-medium">Website</h3>
                                                             <a
@@ -279,9 +279,11 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                                     <h2 className="text-xl font-semibold mb-2">Keywords</h2>
                                                     <div className="flex flex-wrap gap-2">
                                                         {(isMovieType ? data.keywords.keywords : data.keywords.results).map((keyword: any) => (
-                                                            <Badge key={keyword.id} variant="outline">
-                                                                {keyword.name}
-                                                            </Badge>
+                                                            <Link key={keyword.id} href={`/keyword/${keyword.id}?type=${type}`}>
+                                                                <Badge variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
+                                                                    {keyword.name}
+                                                                </Badge>
+                                                            </Link>
                                                         ))}
                                                     </div>
                                                 </div>
@@ -297,12 +299,12 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                             <div>
                                                 <h2 className="text-xl font-semibold mb-4">Top Cast</h2>
                                                 <div
-                                                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 z-0">
                                                     {cast.slice(0, 10).map((person: any) => (
                                                         <Link
                                                             key={`${person.id}-${person.cast_id || person.order}`}
                                                             href={`/person/${person.id}`}
-                                                            className="group"
+                                                            className="group "
                                                         >
                                                             <div
                                                                 className="aspect-[2/3] relative rounded-lg overflow-hidden">
@@ -349,7 +351,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                                         .slice(0, 6)
                                                         .map((person: any) => (
                                                             <div key={`${person.id}-${person.job}`}
-                                                                 className="flex items-start gap-3">
+                                                                className="flex items-start gap-3">
                                                                 <div
                                                                     className="h-12 w-12 relative rounded-full overflow-hidden">
                                                                     <Image
@@ -383,7 +385,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                         {videos.length > 0 ? (
                                             <div>
                                                 <h2 className="text-xl font-semibold mb-4">Videos</h2>
-                                                <VideosGallery videos={videos}/>
+                                                <VideosGallery videos={videos} />
                                             </div>
                                         ) : (
                                             <p className="text-muted-foreground">No videos available.</p>
@@ -492,7 +494,7 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                                                         <span>•</span>
                                                                         <div className="flex items-center">
                                                                             <Star
-                                                                                className="h-3 w-3 fill-yellow-500 text-yellow-500 mr-1"/>
+                                                                                className="h-3 w-3 fill-yellow-500 text-yellow-500 mr-1" />
                                                                             <span>{review.author_details.rating}/10</span>
                                                                         </div>
                                                                     </>
@@ -504,9 +506,9 @@ export function MediaDetails({data, type, torrents}: MediaDetailsProps) {
                                                         <p className="text-muted-foreground line-clamp-4">{review.content}</p>
                                                         {review.content.length > 300 && (
                                                             <Button variant="link" size="sm" className="mt-1 h-auto p-0"
-                                                                    asChild>
+                                                                asChild>
                                                                 <a href={review.url} target="_blank"
-                                                                   rel="noopener noreferrer">
+                                                                    rel="noopener noreferrer">
                                                                     Read Full Review
                                                                 </a>
                                                             </Button>

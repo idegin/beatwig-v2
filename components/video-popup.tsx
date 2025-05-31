@@ -3,6 +3,12 @@
 import { useState, useEffect } from "react"
 import { X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface VideoPopupProps {
   videoId: string
@@ -20,19 +26,8 @@ export function VideoPopup({ videoId, title, isOpen, onClose, mediaId, mediaType
 
   useEffect(() => {
     setMounted(true)
+  }, [])
 
-    if (isOpen) {
-      // Disable body scroll when modal is open
-      document.body.style.overflow = "hidden"
-    }
-
-    return () => {
-      // Enable body scroll when modal is closed
-      document.body.style.overflow = "auto"
-    }
-  }, [isOpen])
-
-  // Fetch trailer if videoId is not provided but mediaId and mediaType are
   useEffect(() => {
     async function fetchTrailer() {
       if (!videoId && mediaId && mediaType) {
@@ -43,7 +38,6 @@ export function VideoPopup({ videoId, title, isOpen, onClose, mediaId, mediaType
           const response = await fetch(endpoint)
           const data = await response.json()
 
-          // Find a trailer
           const trailer =
             data.results?.find((video: any) => video.type === "Trailer" && video.site === "YouTube") ||
             data.results?.[0]
@@ -66,22 +60,26 @@ export function VideoPopup({ videoId, title, isOpen, onClose, mediaId, mediaType
     }
   }, [isOpen, videoId, mediaId, mediaType])
 
-  if (!mounted || !isOpen) return null
+  if (!mounted) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-5xl">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute -top-12 right-0 text-white hover:bg-white/20"
-          onClick={onClose}
-        >
-          <X className="h-6 w-6" />
-          <span className="sr-only">Close</span>
-        </Button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-6xl w-full h-[80vh] p-0 bg-black border-none">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="relative w-full h-full bg-black rounded-lg overflow-hidden-">
+          <Button
+            // variant="ghost"
+            size="icon"
+            className="absolute -top-10 right-4 text-white hover:bg-white/20- z-[500]"
+            onClick={onClose}
+          >
+            <X className="h-6 w-6" />
+            <span className="sr-only">Close</span>
+          </Button>
 
-        <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -92,14 +90,16 @@ export function VideoPopup({ videoId, title, isOpen, onClose, mediaId, mediaType
               title={title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              className="absolute inset-0 w-full h-full"
+              className="w-full h-full"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-white">No trailer available</div>
+            <div className="absolute inset-0 flex items-center justify-center text-white">
+              No trailer available
+            </div>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
