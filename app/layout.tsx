@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Footer } from "@/components/footer"
 import { GoogleAnalytics } from "@/components/google-analytics"
 import { cn } from "@/lib/utils"
+import { Analytics } from "@vercel/analytics/next"
 import "@/app/globals.css"
 
 
@@ -35,6 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <Analytics />
         <GoogleAnalytics />
       </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased", poppins.variable)}>
