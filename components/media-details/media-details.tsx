@@ -301,8 +301,8 @@ export function MediaDetails({ data, type, torrents }: MediaDetailsProps) {
             : "/placeholder.svg?height=720&width=1280"
 
     // Build watch URL with season/episode if there's watch history for TV shows
-    const watchUrl = watchProgress && type === "tv" && watchProgress.season && watchProgress.episode
-        ? `/${type}/${data.id}/watch?season=${watchProgress.season}&episode=${watchProgress.episode}`
+    const watchUrl = watchProgress && type === "tv" && watchProgress.seasonNumber && watchProgress.episodeNumber
+        ? `/${type}/${data.id}/watch?season=${watchProgress.seasonNumber}&episode=${watchProgress.episodeNumber}`
         : `/${type}/${data.id}/watch`
 
     return (
@@ -331,9 +331,9 @@ export function MediaDetails({ data, type, torrents }: MediaDetailsProps) {
                         {watchProgress ? (
                             <div className="flex flex-col items-center">
                                 <span className="text-white font-medium text-lg drop-shadow-lg">Continue Watching</span>
-                                {type === "tv" && watchProgress.season && watchProgress.episode && (
+                                {type === "tv" && watchProgress.seasonNumber && watchProgress.episodeNumber && (
                                     <span className="text-white/80 text-sm drop-shadow-lg">
-                                        S{watchProgress.season} E{watchProgress.episode}
+                                        S{watchProgress.seasonNumber} E{watchProgress.episodeNumber}
                                     </span>
                                 )}
                             </div>
