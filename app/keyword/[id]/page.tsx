@@ -13,8 +13,7 @@ interface KeywordPageProps {
 
 export async function generateMetadata({ params }: KeywordPageProps): Promise<Metadata> {
     try {
-        // @ts-ignore
-        const keywordId = params.id
+        const { id: keywordId } = await params
         const keyword = await getKeywordDetails(keywordId)
 
         return {
@@ -44,10 +43,9 @@ export async function generateMetadata({ params }: KeywordPageProps): Promise<Me
 
 export default async function KeywordPage({ params, searchParams }: KeywordPageProps) {
     try {
-        // @ts-ignore
-        const keywordId = params.id
-        // @ts-ignore
-        const mediaType = (searchParams.type === "tv" ? "tv" : "movie") as "movie" | "tv"
+        const { id: keywordId } = await params
+        const resolvedSearchParams = await searchParams
+        const mediaType = (resolvedSearchParams.type === "tv" ? "tv" : "movie") as "movie" | "tv"
 
         const [keyword, initialMovies, initialTVShows] = await Promise.all([
             getKeywordDetails(keywordId),

@@ -382,6 +382,38 @@ export const saveWatchHistory = async (
 };
 
 /**
+ * Get watch history for a specific media item
+ * @param mediaId - The media ID to check
+ * @param mediaType - "movie" or "tv"
+ * @returns Promise with the watch history item or null if not found
+ */
+export const getMediaWatchProgress = async (
+    mediaId: number, 
+    mediaType: "movie" | "tv"
+): Promise<WatchHistoryItem | null> => {
+    try {
+        const currentUser = await getCurrentUser();
+        
+        if (!currentUser) {
+            return null;
+        }
+        
+        const docId = `${currentUser.uid}-${mediaId}`;
+        const historyRef = doc(db, dbCollectionName.WATCH_HISTORY, docId);
+        const docSnap = await getDoc(historyRef);
+        
+        if (docSnap.exists()) {
+            return docSnap.data() as WatchHistoryItem;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error("Error getting media watch progress:", error);
+        return null;
+    }
+};
+
+/**
  * Get the user's watch history
  * @param limit Number of history items to return
  * @returns Promise with the user's watch history items

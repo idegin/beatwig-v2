@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getTMDBImageUrl, formatDate, formatRuntime, formatRating, formatNumber } from "@/lib/utils"
 import { BACKDROP_SIZES, POSTER_SIZES, PROFILE_SIZES } from "@/lib/constants"
 import { MediaSection } from "@/components/media-section"
@@ -14,17 +15,242 @@ import { VideosGallery } from "@/components/videos-gallery"
 import { VideoPopup } from "@/components/video-popup"
 import {
     Calendar,
+    CalendarDays,
+    ChevronRight,
     Clock,
     DollarSign,
     ExternalLink,
     Film,
     Globe,
+    Layers,
     Play,
     Star,
-    Tag
+    Tag,
+    Tv,
+    X
 } from "lucide-react"
 import { MovieTorrent } from "@/lib/yts";
 import MediaDetailsActions from "@/components/media-details/MediaDetailsActions";
+import type { Season, Episode, SeasonResponse } from "@/lib/tmdb";
+import { getMediaWatchProgress, type WatchHistoryItem } from "@/lib/firebase";
+import { useAuth } from "@/context/auth.context";
+
+// Seasons Section Component for TV Shows
+interface SeasonsSectionProps {
+    seasons: Season[]
+    tvId: number
+}
+
+function SeasonsSection({ seasons, tvId }: SeasonsSectionProps) {
+    const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
+    const [seasonDetails, setSeasonDetails] = useState<SeasonResponse | null>(null)
+    const [loading, setLoading] = useState(false)
+
+    // Filter out specials (season 0) if desired, or keep them
+    const regularSeasons = seasons.filter(s => s.season_number > 0)
+
+    const fetchSeasonDetails = async (seasonNumber: number) => {
+        setLoading(true)
+        try {
+            const response = await fetch(`/api/tv/${tvId}/browser`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ seasonNumber }),
+            })
+            const data = await response.json()
+            setSeasonDetails(data)
+        } catch (error) {
+            console.error("Error fetching season details:", error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSeasonClick = (seasonNumber: number) => {
+        if (selectedSeason === seasonNumber) {
+            setSelectedSeason(null)
+            setSeasonDetails(null)
+        } else {
+            setSelectedSeason(seasonNumber)
+            fetchSeasonDetails(seasonNumber)
+        }
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-2">
+                <Layers className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">
+                    {regularSeasons.length} {regularSeasons.length === 1 ? 'Season' : 'Seasons'}
+                </h2>
+            </div>
+
+            {/* Seasons Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {regularSeasons.map((season) => (
+                    <div
+                        key={season.id}
+                        onClick={() => handleSeasonClick(season.season_number)}
+                        className={`group cursor-pointer rounded-lg overflow-hidden transition-all duration-300 ${
+                            selectedSeason === season.season_number 
+                                ? 'ring-2 ring-primary shadow-lg shadow-primary/20' 
+                                : 'hover:ring-2 hover:ring-primary/50'
+                        }`}
+                    >
+                        <div className="relative aspect-[2/3] bg-muted">
+                            {season.poster_path ? (
+                                <Image
+                                    src={getTMDBImageUrl(season.poster_path, POSTER_SIZES.MEDIUM)}
+                                    alt={season.name}
+                                    fill
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                            ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                                    <Tv className="h-12 w-12 text-muted-foreground/50" />
+                                </div>
+                            )}
+                            
+                            {/* Overlay with episode count */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                                <h3 className="font-semibold text-white text-sm line-clamp-1">{season.name}</h3>
+                                <p className="text-xs text-white/70 mt-0.5">{season.episode_count} Episodes</p>
+                            </div>
+                            
+                            {/* Selected indicator */}
+                            {selectedSeason === season.season_number && (
+                                <div className="absolute top-2 right-2">
+                                    <Badge className="bg-primary text-primary-foreground">Selected</Badge>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Episodes Panel */}
+            {selectedSeason && (
+                <div className="mt-6 border rounded-lg overflow-hidden bg-card/50 backdrop-blur">
+                    <div className="flex items-center justify-between p-4 border-b bg-muted/50">
+                        <div className="flex items-center gap-3">
+                            <Film className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold text-lg">
+                                Season {selectedSeason} Episodes
+                            </h3>
+                            {seasonDetails && (
+                                <Badge variant="secondary">
+                                    {seasonDetails.episodes?.length || 0} episodes
+                                </Badge>
+                            )}
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setSelectedSeason(null)
+                                setSeasonDetails(null)
+                            }}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {loading ? (
+                        <div className="p-4 space-y-4">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="flex gap-4">
+                                    <Skeleton className="h-24 w-40 rounded-lg flex-shrink-0" />
+                                    <div className="space-y-2 flex-1">
+                                        <Skeleton className="h-5 w-3/4" />
+                                        <Skeleton className="h-4 w-1/2" />
+                                        <Skeleton className="h-4 w-full" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : seasonDetails?.episodes && seasonDetails.episodes.length > 0 ? (
+                        <div className="divide-y">
+                            {seasonDetails.episodes.map((episode) => (
+                                <Link
+                                    key={episode.id}
+                                    href={`/tv/${tvId}/watch?season=${selectedSeason}&episode=${episode.episode_number}`}
+                                    className="flex gap-4 p-4 hover:bg-muted/50 transition-colors group"
+                                >
+                                    {/* Episode Thumbnail */}
+                                    <div className="relative h-24 w-40 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
+                                        {episode.still_path ? (
+                                            <Image
+                                                src={getTMDBImageUrl(episode.still_path, BACKDROP_SIZES.SMALL)}
+                                                alt={episode.name}
+                                                fill
+                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                            />
+                                        ) : (
+                                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                                                <Play className="h-8 w-8 text-muted-foreground/50" />
+                                            </div>
+                                        )}
+                                        {/* Episode number badge */}
+                                        <div className="absolute bottom-1 left-1">
+                                            <Badge variant="secondary" className="text-xs bg-black/70 hover:bg-black/70">
+                                                E{episode.episode_number}
+                                            </Badge>
+                                        </div>
+                                        {/* Play overlay on hover */}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Play className="h-8 w-8 text-white fill-white" />
+                                        </div>
+                                    </div>
+
+                                    {/* Episode Details */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <h4 className="font-medium line-clamp-1 group-hover:text-primary transition-colors">
+                                                {episode.name}
+                                            </h4>
+                                            <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                            {episode.air_date && (
+                                                <div className="flex items-center gap-1">
+                                                    <CalendarDays className="h-3 w-3" />
+                                                    <span>{formatDate(episode.air_date)}</span>
+                                                </div>
+                                            )}
+                                            {episode.runtime && (
+                                                <div className="flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    <span>{episode.runtime} min</span>
+                                                </div>
+                                            )}
+                                            {episode.vote_average > 0 && (
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                                    <span>{episode.vote_average.toFixed(1)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                                            {episode.overview || "No description available."}
+                                        </p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                            <Tv className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                            <p>No episodes available for this season.</p>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
 
 interface MediaDetailsProps {
     data: any
@@ -34,6 +260,22 @@ interface MediaDetailsProps {
 
 export function MediaDetails({ data, type, torrents }: MediaDetailsProps) {
     const [showTrailer, setShowTrailer] = useState(false);
+    const [watchProgress, setWatchProgress] = useState<WatchHistoryItem | null>(null);
+    const { user } = useAuth();
+
+    // Check for watch progress
+    useEffect(() => {
+        const checkWatchProgress = async () => {
+            if (!user || !data?.id) return;
+            try {
+                const progress = await getMediaWatchProgress(data.id.toString(), type);
+                setWatchProgress(progress);
+            } catch (error) {
+                console.error('Error fetching watch progress:', error);
+            }
+        };
+        checkWatchProgress();
+    }, [user, data?.id, type]);
 
     if (!data) return null
 
@@ -58,7 +300,10 @@ export function MediaDetails({ data, type, torrents }: MediaDetailsProps) {
             ? getTMDBImageUrl(data.poster_path, POSTER_SIZES.ORIGINAL)
             : "/placeholder.svg?height=720&width=1280"
 
-    const watchUrl = `/${type}/${data.id}/watch`
+    // Build watch URL with season/episode if there's watch history for TV shows
+    const watchUrl = watchProgress && type === "tv" && watchProgress.season && watchProgress.episode
+        ? `/${type}/${data.id}/watch?season=${watchProgress.season}&episode=${watchProgress.episode}`
+        : `/${type}/${data.id}/watch`
 
     return (
         <div className="flex flex-col">
@@ -79,9 +324,22 @@ export function MediaDetails({ data, type, torrents }: MediaDetailsProps) {
 
                 <div className="absolute inset-0 flex items-center justify-center">
                     <Link href={watchUrl}
-                        className={'h-20 w-20 flex items-center justify-center rounded-full hover:bg-primary-foreground hover:text-primary bg-primary text-primary-foreground transition-colors duration-300'}>
-                        <Play className="h-8 w-8" />
-                        <span className="sr-only">Watch</span>
+                        className={'flex flex-col items-center gap-3 group'}>
+                        <div className="h-20 w-20 flex items-center justify-center rounded-full hover:bg-primary-foreground hover:text-primary bg-primary text-primary-foreground transition-colors duration-300">
+                            <Play className="h-8 w-8" />
+                        </div>
+                        {watchProgress ? (
+                            <div className="flex flex-col items-center">
+                                <span className="text-white font-medium text-lg drop-shadow-lg">Continue Watching</span>
+                                {type === "tv" && watchProgress.season && watchProgress.episode && (
+                                    <span className="text-white/80 text-sm drop-shadow-lg">
+                                        S{watchProgress.season} E{watchProgress.episode}
+                                    </span>
+                                )}
+                            </div>
+                        ) : (
+                            <span className="sr-only">Watch</span>
+                        )}
                     </Link>
                 </div>
             </div>
@@ -166,8 +424,9 @@ export function MediaDetails({ data, type, torrents }: MediaDetailsProps) {
                                 </div>
                             </div>
 
-                            <Tabs defaultValue="overview" className="mt-8">
-                                <TabsList className="grid grid-cols-4 md:w-auto md:inline-flex">
+                            <Tabs defaultValue={isMovieType ? "overview" : "seasons"} className="mt-8">
+                                <TabsList className={`grid ${!isMovieType ? 'grid-cols-5' : 'grid-cols-4'} md:w-auto md:inline-flex`}>
+                                    {!isMovieType && <TabsTrigger value="seasons">Seasons</TabsTrigger>}
                                     <TabsTrigger value="overview">Overview</TabsTrigger>
                                     <TabsTrigger value="cast">Cast & Crew</TabsTrigger>
                                     <TabsTrigger value="media">Trailers</TabsTrigger>
@@ -290,6 +549,13 @@ export function MediaDetails({ data, type, torrents }: MediaDetailsProps) {
                                             )}
                                     </div>
                                 </TabsContent>
+
+                                {/* Seasons Tab - Only for TV Shows */}
+                                {!isMovieType && data.seasons && (
+                                    <TabsContent value="seasons" className="mt-6">
+                                        <SeasonsSection seasons={data.seasons} tvId={data.id} />
+                                    </TabsContent>
+                                )}
 
                                 {/* Cast & Crew Tab */}
                                 <TabsContent value="cast" className="mt-6">

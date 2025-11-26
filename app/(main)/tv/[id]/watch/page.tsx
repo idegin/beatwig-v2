@@ -8,8 +8,8 @@ type Props = {
 }
 
 export async function generateMetadata({params}: Props): Promise<Metadata> {
-    //@ts-ignore
-    const tvDetails = await getTVShowDetails(params.id)
+    const { id } = await params
+    const tvDetails = await getTVShowDetails(id)
 
     return {
         title: `Watch ${tvDetails.name} | BeatWig`,
@@ -22,8 +22,8 @@ export async function generateMetadata({params}: Props): Promise<Metadata> {
 }
 
 export default async function WatchTVShowPage({params}: Props) {
-    //@ts-ignore
-    const [tvDetails, videosData] = await Promise.all([getTVShowDetails(params.id), getTVShowVideos(params.id)])
+    const { id } = await params
+    const [tvDetails, videosData] = await Promise.all([getTVShowDetails(id), getTVShowVideos(id)])
 
     const videos = videosData.results || []
     const trailer = videos.find((video: any) => video.type === "Trailer" && video.site === "YouTube") || videos[0]
@@ -34,12 +34,10 @@ export default async function WatchTVShowPage({params}: Props) {
         <>
             <MediaPlayer
                 mediaDetails={tvDetails}
-                //@ts-ignore
-                mediaId={params.id}
+                mediaId={id}
                 mediaType="tv"
                 title={tvDetails.name}
-                //@ts-ignore
-                backUrl={`/tv/${params.id}`}
+                backUrl={`/tv/${id}`}
                 youtubeTrailerId={trailerKey}
             />
         </>

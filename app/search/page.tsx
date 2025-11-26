@@ -19,8 +19,8 @@ type Props = {
 }
 
 export async function generateMetadata({searchParams}: Props): Promise<Metadata> {
-    //@ts-ignore
-    const query = searchParams.query || ""
+    const resolvedSearchParams = await searchParams
+    const query = (resolvedSearchParams.query as string) || ""
 
     return {
         title: `Search results for "${query}" | BeatWig`,
@@ -45,8 +45,8 @@ export async function generateMetadata({searchParams}: Props): Promise<Metadata>
 }
 
 export default async function SearchPage({searchParams}: Props) {
-    //@ts-ignore
-    const query = searchParams.query || ""
+    const resolvedSearchParams = await searchParams
+    const query = (resolvedSearchParams.query as string) || ""
 
     if (!query) {
         return (

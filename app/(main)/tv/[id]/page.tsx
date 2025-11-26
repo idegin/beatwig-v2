@@ -9,8 +9,8 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  //@ts-ignore
-  const tvDetails = await getTVShowDetails(params.id)
+  const { id } = await params
+  const tvDetails = await getTVShowDetails(id)
 
   return {
     title: `${tvDetails.name} | BeatWig`,
@@ -29,8 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TVPage({ params }: Props) {
-  //@ts-ignore
-  const tvDetails = await getTVShowDetails(params.id)
+  const { id } = await params
+  const tvDetails = await getTVShowDetails(id)
 
   return (
     <>

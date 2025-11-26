@@ -14,10 +14,10 @@ interface GenrePageProps {
 
 export async function generateMetadata({ params, searchParams }: GenrePageProps): Promise<Metadata> {
     try {
-        //@ts-ignore
-        const genreId = Number.parseInt(params.id)
-        //@ts-ignore
-        const mediaType = (searchParams.type === "tv" ? "tv" : "movie") as "movie" | "tv"
+        const { id } = await params
+        const resolvedSearchParams = await searchParams
+        const genreId = Number.parseInt(id)
+        const mediaType = (resolvedSearchParams.type === "tv" ? "tv" : "movie") as "movie" | "tv"
         const genre = await getGenreDetails(genreId, mediaType)
 
         return {
@@ -34,14 +34,12 @@ export async function generateMetadata({ params, searchParams }: GenrePageProps)
 
 export default async function GenrePage({ params, searchParams }: GenrePageProps) {
     try {
-        //@ts-ignore
-        const genreId = Number.parseInt(params.id)
-        //@ts-ignore
-        const mediaType = (searchParams.type === "tv" ? "tv" : "movie") as "movie" | "tv"
-        //@ts-ignore
-        const page = Number.parseInt(searchParams.page || "1")
-        //@ts-ignore
-        const sortBy = searchParams.sort_by || "popularity.desc"
+        const { id } = await params
+        const resolvedSearchParams = await searchParams
+        const genreId = Number.parseInt(id)
+        const mediaType = (resolvedSearchParams.type === "tv" ? "tv" : "movie") as "movie" | "tv"
+        const page = Number.parseInt((resolvedSearchParams.page as string) || "1")
+        const sortBy = (resolvedSearchParams.sort_by as string) || "popularity.desc"
 
         const [genre, mediaItems] = await Promise.all([
             getGenreDetails(genreId, mediaType),

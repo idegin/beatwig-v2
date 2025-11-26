@@ -12,8 +12,7 @@ interface PersonPageProps {
 
 export async function generateMetadata({ params }: PersonPageProps): Promise<Metadata> {
     try {
-        // @ts-ignore
-        const personId = params.id
+        const { id: personId } = await params
         const person = await getPersonDetails(personId)
 
         return {
@@ -57,8 +56,7 @@ export async function generateMetadata({ params }: PersonPageProps): Promise<Met
 
 export default async function PersonPage({ params }: PersonPageProps) {
     try {
-        // @ts-ignore
-        const personId = params.id
+        const { id: personId } = await params
 
         const [person, movieCredits, tvCredits] = await Promise.all([
             getPersonDetails(personId),

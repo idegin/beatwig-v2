@@ -10,6 +10,8 @@ import { BACKDROP_SIZES, POSTER_SIZES } from "@/lib/constants"
 import type { Movie, TVShow } from "@/lib/tmdb"
 import { Play, Plus, Star, ChevronLeft, ChevronRight } from "lucide-react"
 import { VideoPopup } from "@/components/video-popup"
+import { getMediaWatchProgress, type WatchHistoryItem } from "@/lib/firebase"
+import { useAuth } from "@/context/auth.context"
 
 interface HeroCarouselProps {
   items: (Movie | TVShow)[]
@@ -20,6 +22,35 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showTrailer, setShowTrailer] = useState(false)
   const [trailerKey, setTrailerKey] = useState("")
+  const [watchProgress, setWatchProgress] = useState<Map<number, WatchHistoryItem>>(new Map())
+  const { user } = useAuth()
+
+  // Check watch history for all items when user changes
+  useEffect(() => {
+    const checkWatchHistory = async () => {
+      if (!user) {
+        setWatchProgress(new Map())
+        return
+      }
+      
+      const progressMap = new Map<number, WatchHistoryItem>()
+      
+      // Check watch history for all carousel items in parallel
+      await Promise.all(
+        items.map(async (item) => {
+          const type = isMovie(item) ? "movie" : "tv"
+          const progress = await getMediaWatchProgress(item.id, type)
+          if (progress) {
+            progressMap.set(item.id, progress)
+          }
+        })
+      )
+      
+      setWatchProgress(progressMap)
+    }
+    
+    checkWatchHistory()
+  }, [user, items])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -70,6 +101,18 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
   const type = isMovie(currentItem) ? "movie" : "tv"
   const detailsLink = `/${type}/${currentItem.id}`
   const watchLink = `/${type}/${currentItem.id}/watch`
+  
+  // Check if current item has watch history
+  const currentProgress = watchProgress.get(currentItem.id)
+  const hasWatchHistory = !!currentProgress
+
+  // Build watch URL with season/episode for TV shows
+  const getWatchUrl = () => {
+    if (currentProgress && type === "tv" && currentProgress.seasonNumber && currentProgress.episodeNumber) {
+      return `${watchLink}?season=${currentProgress.seasonNumber}&episode=${currentProgress.episodeNumber}`
+    }
+    return watchLink
+  }
 
   const getBackgroundImage = (item:any) => {
     return item.backdrop_path
@@ -128,18 +171,36 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
           <p className="mt-6 text-lg text-muted-foreground">{truncateText(currentItem.overview, 200)}</p>
 
           <div className="mt-8 flex flex-wrap gap-4">
-            <Button
-              size="lg"
-              className="gap-2 rounded-full"
-              onClick={() => {
-                // Open trailer popup
-                setTrailerKey("") // This will be fetched in the details page
-                setShowTrailer(true)
-              }}
-            >
-              <Play className="h-5 w-5" />
-              Watch Trailer
-            </Button>
+            {hasWatchHistory ? (
+              <Button
+                size="lg"
+                className="gap-2 rounded-full bg-primary hover:bg-primary/90"
+                asChild
+              >
+                <Link href={getWatchUrl()}>
+                  <Play className="h-5 w-5 fill-current" />
+                  Continue Watching
+                  {currentProgress && currentProgress.progress > 0 && (
+                    <span className="ml-1 text-xs opacity-75">
+                      ({Math.round(currentProgress.progress * 100)}%)
+                    </span>
+                  )}
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="gap-2 rounded-full"
+                onClick={() => {
+                  // Open trailer popup
+                  setTrailerKey("") // This will be fetched in the details page
+                  setShowTrailer(true)
+                }}
+              >
+                <Play className="h-5 w-5" />
+                Watch Trailer
+              </Button>
+            )}
 
             <Button variant="outline" size="lg" className="gap-2 rounded-full" asChild>
               <Link href={detailsLink}>
