@@ -11,12 +11,22 @@ interface FilmCardProps {
     variant?: "default" | "wide" | "compact"
 }
 
+function slugify(text: string): string {
+    return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/--+/g, '-')
+        .trim()
+}
+
 export function FilmCard({ film, variant = "default" }: FilmCardProps) {
     const isMovie = film.media_type === "movie" || film.title !== undefined
     const title = isMovie ? film.title : film.name
     const releaseDate = isMovie ? film.release_date : film.first_air_date
     const year = releaseDate ? new Date(releaseDate).getFullYear() : ""
-    const href = `/${isMovie ? "movies" : "tv"}/${film.id}`
+    const slug = title ? slugify(title) : "untitled"
+    const href = `/film/${isMovie ? "movie" : "tv"}/${film.id}/${slug}`
     const posterUrl = film.poster_path
         ? `${TMDB_IMAGE_BASE}/w500${film.poster_path}`
         : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500&q=80"
