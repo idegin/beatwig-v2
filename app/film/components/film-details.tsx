@@ -16,7 +16,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import { X, Play } from "lucide-react"
 import { FilmDetailsData } from "@/types/tmdb.types"
 
 interface FilmDetailsProps {
@@ -29,6 +29,7 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
     const [isInWatchlist, setIsInWatchlist] = React.useState(false)
 
     const isTV = mediaType === "tv"
+    const isMovie = mediaType === "movie"
 
     const handlePlayTrailer = () => {
         setTrailerOpen(true)
@@ -40,6 +41,10 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
 
     const handleDownload = () => {
         console.log("Download clicked")
+    }
+
+    const handlePlayMovie = () => {
+        console.log("Play movie clicked")
     }
 
     return (
@@ -62,6 +67,33 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
                 onDownload={handleDownload}
                 isInWatchlist={isInWatchlist}
             />
+
+            {isMovie && (
+                <div className="container mx-auto px-4 -mt-8 relative z-20">
+                    <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-primary/30">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="text-center md:text-left">
+                                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
+                                    Ready to Watch?
+                                </h2>
+                                <p className="text-muted-foreground text-sm md:text-base">
+                                    Stream {data.title} now in HD quality
+                                </p>
+                            </div>
+                            <Button
+                                size="lg"
+                                onClick={handlePlayMovie}
+                                className="h-16 md:h-18 gap-4 rounded-2xl bg-primary px-10 md:px-14 text-lg md:text-xl font-bold text-primary-foreground shadow-xl shadow-primary/40 transition-all hover:scale-105 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/50 group"
+                            >
+                                <div className="size-12 md:size-14 rounded-full bg-primary-foreground/20 flex items-center justify-center group-hover:bg-primary-foreground/30 transition-colors">
+                                    <Play className="size-6 md:size-8 fill-current ml-1" />
+                                </div>
+                                Play Movie
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="container mx-auto px-4 py-8 space-y-16">
                 {isTV && data.seasons && data.episodes && (

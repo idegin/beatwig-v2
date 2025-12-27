@@ -5,8 +5,9 @@ import { ContinueWatching } from "./continue-watching"
 import { FilmRow } from "@/components/film-row"
 import { GenreRow } from "./genre-row"
 import { NetworkRow } from "./network-row"
+import { PeopleRow } from "./people-row"
 import { ContinueWatchingItem } from "@/types/firebase.types"
-import { Film, Genre, HeroData, Network } from "@/types/tmdb.types"
+import { Film, Genre, HeroData, Network, Person } from "@/types/tmdb.types"
 import { appData } from "@/app/constants"
 
 interface HomeProps {
@@ -23,6 +24,7 @@ interface HomeProps {
     genres: Genre[]
     networks: Network[]
     heroData: HeroData
+    popularPeople?: Person[]
 }
 
 export default function Home({
@@ -35,6 +37,7 @@ export default function Home({
     popularOnApp,
     genres,
     networks,
+    popularPeople,
 }: HomeProps) {
     return (
         <div className="space-y-2 md:space-y-4">
@@ -68,6 +71,16 @@ export default function Home({
             >
                 <FilmRow films={upcomingMovies} />
             </PageSection>
+
+            {popularPeople && popularPeople.length > 0 && (
+                <PageSection
+                    heading="Popular People"
+                    subHeading="Trending actors, directors & more"
+                    altLink={{ route: "/people", text: "View All" }}
+                >
+                    <PeopleRow people={popularPeople} />
+                </PageSection>
+            )}
 
             <PageSection
                 heading="Romance Movies"
