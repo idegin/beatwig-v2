@@ -1,0 +1,49 @@
+{
+  "name": "BeatWig",
+  "short_name": "BeatWig",
+  "description": "An online movie streaming platform with a wide range of movies and TV shows.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EE1447",
+  "theme_color": "#EE1447",
+  "categories": ["entertainment", "video", "movies"],
+  "dir": "ltr",
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": ["any", "maskable"]
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": ["any", "maskable"]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/mobile1.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/mobile2.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/mobile3.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    }
+  ]
+}
