@@ -25,32 +25,6 @@ function buildUrl(endpoint: string, params: Record<string, string | number | boo
     return url.toString()
 }
 
-const HARDCODED_FILMS: Film[] = [
-    { id: 1, title: "The Shawshank Redemption", name: "", overview: "Two imprisoned men bond over years, finding solace and redemption.", poster_path: "/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg", backdrop_path: "/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg", release_date: "1994-09-23", first_air_date: "", vote_average: 8.7, media_type: "movie", genre_ids: [18, 80] },
-    { id: 2, title: "The Godfather", name: "", overview: "The aging patriarch of a crime dynasty transfers control to his son.", poster_path: "/3bhkrj58Vtu7enYsRolD1fZdja1.jpg", backdrop_path: "/tmU7GeKVybMWFButWEGl2M4GeiP.jpg", release_date: "1972-03-14", first_air_date: "", vote_average: 8.7, media_type: "movie", genre_ids: [18, 80] },
-    { id: 3, title: "The Dark Knight", name: "", overview: "Batman faces the Joker in Gotham's darkest hour.", poster_path: "/qJ2tW6WMUDux911r6m7haRef0WH.jpg", backdrop_path: "/nMKdUUepR0i5zn0y1T4CsSB5chy.jpg", release_date: "2008-07-18", first_air_date: "", vote_average: 8.5, media_type: "movie", genre_ids: [28, 80, 18] },
-    { id: 4, title: "Inception", name: "", overview: "A thief steals secrets through dream-sharing technology.", poster_path: "/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg", backdrop_path: "/s3TBrRGB1iav7gFOCNx3H31MoES.jpg", release_date: "2010-07-16", first_air_date: "", vote_average: 8.4, media_type: "movie", genre_ids: [28, 878, 53] },
-    { id: 5, title: "Interstellar", name: "", overview: "A team explores space to ensure humanity's survival.", poster_path: "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", backdrop_path: "/pbrkL804c8yAv3zBZR4QPEafpAR.jpg", release_date: "2014-11-05", first_air_date: "", vote_average: 8.4, media_type: "movie", genre_ids: [12, 18, 878] },
-    { id: 6, title: "Pulp Fiction", name: "", overview: "Various Los Angeles criminals' lives intertwine.", poster_path: "/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg", backdrop_path: "/4cDFJr4HnXN5AdPw4AKrmLlMWdO.jpg", release_date: "1994-09-10", first_air_date: "", vote_average: 8.5, media_type: "movie", genre_ids: [53, 80] },
-    { id: 7, title: "Forrest Gump", name: "", overview: "A man with low IQ witnesses historic events.", poster_path: "/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg", backdrop_path: "/7c9UVPPiTPltouxRVY6N9uEGsZW.jpg", release_date: "1994-06-23", first_air_date: "", vote_average: 8.5, media_type: "movie", genre_ids: [35, 18, 10749] },
-    { id: 8, title: "The Matrix", name: "", overview: "A hacker discovers reality is a simulation.", poster_path: "/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", backdrop_path: "/icmmSD4vTTDKOq2vvdulafOGw93.jpg", release_date: "1999-03-30", first_air_date: "", vote_average: 8.2, media_type: "movie", genre_ids: [28, 878] },
-    { id: 9, title: "Goodfellas", name: "", overview: "The story of Henry Hill and his life in the mob.", poster_path: "/aKuFiU82s5ISJpGZp7YkIr3kCUd.jpg", backdrop_path: "/sw7mordbZxgITU877yTpZCud90M.jpg", release_date: "1990-09-12", first_air_date: "", vote_average: 8.5, media_type: "movie", genre_ids: [18, 80] },
-    { id: 10, title: "Fight Club", name: "", overview: "An insomniac and soap maker form an underground fight club.", poster_path: "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg", backdrop_path: "/hZkgoQYus5vegHoetLkCJzb17zJ.jpg", release_date: "1999-10-15", first_air_date: "", vote_average: 8.4, media_type: "movie", genre_ids: [18] },
-    { id: 11, title: "The Lord of the Rings: The Fellowship of the Ring", name: "", overview: "A hobbit and companions quest to destroy a powerful ring.", poster_path: "/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg", backdrop_path: "/pIUvQ9Ed35wlWhY2oU6OmwEsmzG.jpg", release_date: "2001-12-18", first_air_date: "", vote_average: 8.4, media_type: "movie", genre_ids: [12, 14, 28] },
-    { id: 12, title: "Avatar", name: "", overview: "A marine on an alien planet becomes torn between orders and his new world.", poster_path: "/jRXYjXNq0Cs2TcJjLkki24MLp7u.jpg", backdrop_path: "/o0s4XsEDfDlvit5pDRKjzXR4pp2.jpg", release_date: "2009-12-10", first_air_date: "", vote_average: 7.6, media_type: "movie", genre_ids: [28, 12, 14, 878] },
-];
-
-const HARDCODED_GENRES: Genre[] = [
-    { id: 28, name: "Action" },
-    { id: 12, name: "Adventure" },
-    { id: 16, name: "Animation" },
-    { id: 35, name: "Comedy" },
-    { id: 80, name: "Crime" },
-    { id: 18, name: "Drama" },
-    { id: 10749, name: "Romance" },
-    { id: 878, name: "Science Fiction" },
-];
-
 async function fetchTMDB<T>(endpoint: string, params: Record<string, string | number | boolean> = {}): Promise<T> {
     if (!TMDB_ACCESS_TOKEN) {
         throw new Error("TMDB API token not configured")
@@ -108,7 +82,7 @@ export async function getMovieGenres(): Promise<{ genres: Genre[] }> {
     try {
         return await fetchTMDB("/genre/movie/list")
     } catch (error) {
-        return { genres: HARDCODED_GENRES }
+        return { genres: [] }
     }
 }
 
@@ -116,16 +90,7 @@ export async function getTVGenres(): Promise<{ genres: Genre[] }> {
     try {
         return await fetchTMDB("/genre/tv/list")
     } catch (error) {
-        return { genres: [
-            { id: 10759, name: "Action & Adventure" },
-            { id: 16, name: "Animation" },
-            { id: 35, name: "Comedy" },
-            { id: 80, name: "Crime" },
-            { id: 99, name: "Documentary" },
-            { id: 18, name: "Drama" },
-            { id: 10751, name: "Family" },
-            { id: 10765, name: "Sci-Fi & Fantasy" },
-        ] }
+        return { genres: [] }
     }
 }
 
@@ -243,29 +208,15 @@ export async function getHomePageData() {
         }
     } catch (error) {
         console.error("Error fetching TMDB data:", error)
-        const heroFilm = HARDCODED_FILMS[0]
         return {
-            heroData: {
-                id: heroFilm.id,
-                title: heroFilm.title || "",
-                overview: heroFilm.overview,
-                backdrop_path: heroFilm.backdrop_path || "",
-                poster_path: heroFilm.poster_path || "",
-                release_date: heroFilm.release_date || "",
-                vote_average: heroFilm.vote_average,
-                genres: [],
-                runtime: undefined,
-                certification: undefined,
-                media_type: "movie" as const,
-                video_key: undefined,
-            },
-            nowShowingInTheaters: HARDCODED_FILMS.slice(0, 10),
-            upcomingMovies: HARDCODED_FILMS.slice(0, 10),
-            romanceMovies: HARDCODED_FILMS.slice(0, 10),
-            actionMovies: HARDCODED_FILMS.slice(0, 10),
-            popularOnApp: HARDCODED_FILMS.slice(0, 12),
-            genres: HARDCODED_GENRES,
-            becauseYouWatched: { title: "Trending", films: HARDCODED_FILMS.slice(0, 6) },
+            heroData: null,
+            nowShowingInTheaters: [],
+            upcomingMovies: [],
+            romanceMovies: [],
+            actionMovies: [],
+            popularOnApp: [],
+            genres: [],
+            becauseYouWatched: { title: "", films: [] },
             popularPeople: [],
         }
     }
@@ -424,29 +375,7 @@ export async function loadMovies(page = 1): Promise<{
         return { heroData, genreSections }
     } catch (error) {
         console.error("Error loading movies:", error)
-        const heroFilm = HARDCODED_FILMS[0]
-        return {
-            heroData: {
-                id: heroFilm.id,
-                title: heroFilm.title || "",
-                overview: heroFilm.overview,
-                backdrop_path: heroFilm.backdrop_path || "",
-                poster_path: heroFilm.poster_path || "",
-                release_date: heroFilm.release_date || "",
-                vote_average: heroFilm.vote_average,
-                genres: [],
-                runtime: undefined,
-                certification: undefined,
-                media_type: "movie" as const,
-                video_key: undefined,
-            },
-            genreSections: [
-                { genreId: 28, genreName: "Action", films: HARDCODED_FILMS.slice(0, 12) },
-                { genreId: 18, genreName: "Drama", films: HARDCODED_FILMS.slice(0, 12) },
-                { genreId: 35, genreName: "Comedy", films: HARDCODED_FILMS.slice(0, 12) },
-                { genreId: 878, genreName: "Science Fiction", films: HARDCODED_FILMS.slice(0, 12) },
-            ]
-        }
+        return { heroData: null, genreSections: [] }
     }
 }
 
@@ -501,29 +430,7 @@ export async function loadTvShows(page = 1): Promise<{
         return { heroData, genreSections }
     } catch (error) {
         console.error("Error loading TV shows:", error)
-        const heroFilm = HARDCODED_FILMS[0]
-        return {
-            heroData: {
-                id: heroFilm.id,
-                title: heroFilm.title || "",
-                overview: heroFilm.overview,
-                backdrop_path: heroFilm.backdrop_path || "",
-                poster_path: heroFilm.poster_path || "",
-                release_date: heroFilm.release_date || "",
-                vote_average: heroFilm.vote_average,
-                genres: [],
-                runtime: undefined,
-                certification: undefined,
-                media_type: "tv" as const,
-                video_key: undefined,
-            },
-            genreSections: [
-                { genreId: 10759, genreName: "Action & Adventure", films: HARDCODED_FILMS.slice(0, 12).map(f => ({ ...f, media_type: "tv" as const })) },
-                { genreId: 18, genreName: "Drama", films: HARDCODED_FILMS.slice(0, 12).map(f => ({ ...f, media_type: "tv" as const })) },
-                { genreId: 35, genreName: "Comedy", films: HARDCODED_FILMS.slice(0, 12).map(f => ({ ...f, media_type: "tv" as const })) },
-                { genreId: 10765, genreName: "Sci-Fi & Fantasy", films: HARDCODED_FILMS.slice(0, 12).map(f => ({ ...f, media_type: "tv" as const })) },
-            ]
-        }
+        return { heroData: null, genreSections: [] }
     }
 }
 
@@ -548,11 +455,6 @@ export async function loadGenreFilms(
         }
     } catch (error) {
         console.error("Error loading genre films:", error)
-        const genre = HARDCODED_GENRES.find(g => g.id === genreId)
-        return { 
-            results: HARDCODED_FILMS.slice(0, 20).map(f => ({ ...f, media_type: mediaType })), 
-            total_pages: 1, 
-            genreName: genre?.name || "Unknown Genre" 
-        }
+        return { results: [], total_pages: 0, genreName: "Unknown Genre" }
     }
 }
