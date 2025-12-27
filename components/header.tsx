@@ -3,6 +3,7 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   Home,
@@ -43,15 +44,16 @@ import { appData } from "@/app/constants"
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
   { href: "/watchlist", label: "Watch List", icon: List },
-  { href: "/countries", label: "Countries", icon: Globe },
   { href: "/movies", label: "Movies", icon: Film },
   { href: "/tv-shows", label: "TV Shows", icon: Tv },
 ]
 
 export function Header() {
+  const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [isScrolled, setIsScrolled] = React.useState(false)
   const [searchOpen, setSearchOpen] = React.useState(false)
+  const [searchQuery, setSearchQuery] = React.useState("")
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -60,6 +62,19 @@ export function Header() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/search?keyword=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch(e)
+    }
+  }
 
   return (
     <header
@@ -101,14 +116,17 @@ export function Header() {
           </div>
 
           <div className="hidden md:flex items-center gap-3 flex-1 max-w-md">
-            <div className="relative w-full">
+            <form onSubmit={handleSearch} className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search movies, TV shows..."
                 className="pl-10 pr-4 h-10 bg-muted/50 border-0 rounded-full focus-visible:ring-2 focus-visible:ring-primary/50"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
-            </div>
+            </form>
           </div>
 
           <div className="flex items-center gap-2">
@@ -207,14 +225,17 @@ export function Header() {
                   </SheetTitle>
                 </SheetHeader>
                 <div className="p-4">
-                  <div className="relative mb-6">
+                  <form onSubmit={handleSearch} className="relative mb-6">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input
                       type="search"
                       placeholder="Search..."
                       className="pl-10 pr-4 h-11 bg-muted/50 border-0 rounded-full"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={handleKeyDown}
                     />
-                  </div>
+                  </form>
                   <nav className="flex flex-col gap-1">
                     {navLinks.map((link) => (
                       <Link
@@ -262,15 +283,18 @@ export function Header() {
 
         {searchOpen && (
           <div className="md:hidden pb-4">
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search movies, TV shows..."
                 className="pl-10 pr-4 h-10 bg-muted/50 border-0 rounded-full"
                 autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
-            </div>
+            </form>
           </div>
         )}
       </div>

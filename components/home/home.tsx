@@ -5,6 +5,7 @@ import { ContinueWatching } from "./continue-watching"
 import { FilmRow } from "@/components/film-row"
 import { GenreRow } from "./genre-row"
 import { PeopleRow } from "./people-row"
+import { Top10Row } from "./top-10-row"
 import { ContinueWatchingItem } from "@/types/firebase.types"
 import { Film, Genre, HeroData, Person } from "@/types/tmdb.types"
 import { appData } from "@/app/constants"
@@ -82,7 +83,7 @@ export default function Home({
             <PageSection
                 heading="Romance Movies"
                 subHeading="Fall in love with these picks"
-                altLink={{ route: "/genres/10749", text: "View All" }}
+                altLink={{ route: "/genre/10749?type=movie", text: "View All" }}
             >
                 <FilmRow films={romanceMovies} />
             </PageSection>
@@ -90,17 +91,17 @@ export default function Home({
             <PageSection
                 heading="Action Movies"
                 subHeading="Non-stop thrills and excitement"
-                altLink={{ route: "/genres/28", text: "View All" }}
+                altLink={{ route: "/genre/28?type=movie", text: "View All" }}
             >
                 <FilmRow films={actionMovies} />
             </PageSection>
 
             <PageSection
-                heading={`Popular on ${appData.name}`}
-                subHeading="What everyone's watching right now"
+                heading={`Top 10 on ${appData.name}`}
+                subHeading="The most popular titles right now"
                 altLink={{ route: "/popular", text: "View All" }}
             >
-                <FilmRow films={popularOnApp} variant="compact" />
+                <Top10Row films={popularOnApp} />
             </PageSection>
 
             <PageSection

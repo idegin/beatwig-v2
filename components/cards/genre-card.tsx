@@ -35,7 +35,7 @@ export function GenreCard({ genre, size = "default" }: GenreCardProps) {
 
     return (
         <Link
-            href={`/genres/${genre.id}`}
+            href={`/genre/${genre.id}?type=movie`}
             className="group block"
         >
             <div

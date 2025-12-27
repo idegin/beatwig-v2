@@ -283,3 +283,166 @@ export async function getFilmDetails(id: number, mediaType: "movie" | "tv"): Pro
         seasons,
     }
 }
+
+export interface Country {
+    iso_3166_1: string
+    english_name: string
+    native_name: string
+}
+
+export async function loadCountries(): Promise<Country[]> {
+    return fetchTMDB<Country[]>("/configuration/countries")
+}
+
+export async function loadCountryFilms(
+    countryCode: string, 
+    page = 1
+): Promise<{ results: Film[]; total_pages: number }> {
+    const response = await fetchTMDB<{ results: Film[]; total_pages: number }>(
+        "/discover/movie", 
+        { 
+            with_origin_country: countryCode,
+            page,
+            sort_by: "popularity.desc"
+        }
+    )
+    return {
+        results: response.results.map(f => ({ ...f, media_type: "movie" as const })),
+        total_pages: response.total_pages
+    }
+}
+
+export async function loadMovies(page = 1): Promise<{
+    heroData: HeroData | null
+    genreSections: { genreId: number; genreName: string; films: Film[] }[]
+}> {
+    try {
+        const genresData = await getMovieGenres()
+        const allGenres = genresData.genres
+        
+        const shuffled = [...allGenres].sort(() => Math.random() - 0.5)
+        const selectedGenres = shuffled.slice(0, 4)
+
+        const genrePromises = selectedGenres.map(genre => 
+            getMoviesByGenre(genre.id, 1)
+        )
+
+        const [popularData, ...genreResults] = await Promise.all([
+            getPopularMovies(1),
+            ...genrePromises
+        ])
+
+        const heroFilm = popularData.results[Math.floor(Math.random() * Math.min(5, popularData.results.length))]
+        let videoKey: string | undefined
+
+        if (heroFilm) {
+            videoKey = await getTrailerKey("movie", heroFilm.id)
+        }
+
+        const heroData: HeroData | null = heroFilm ? {
+            id: heroFilm.id,
+            title: heroFilm.title || "",
+            overview: heroFilm.overview,
+            backdrop_path: heroFilm.backdrop_path || "",
+            poster_path: heroFilm.poster_path || "",
+            release_date: heroFilm.release_date || "",
+            vote_average: heroFilm.vote_average,
+            genres: [],
+            runtime: undefined,
+            certification: undefined,
+            media_type: "movie",
+            video_key: videoKey,
+        } : null
+
+        const genreSections = selectedGenres.map((genre, index) => ({
+            genreId: genre.id,
+            genreName: genre.name,
+            films: genreResults[index].results.slice(0, 12).map(f => ({ ...f, media_type: "movie" as const }))
+        }))
+
+        return { heroData, genreSections }
+    } catch (error) {
+        console.error("Error loading movies:", error)
+        return { heroData: null, genreSections: [] }
+    }
+}
+
+export async function loadTvShows(page = 1): Promise<{
+    heroData: HeroData | null
+    genreSections: { genreId: number; genreName: string; films: Film[] }[]
+}> {
+    try {
+        const genresData = await getTVGenres()
+        const allGenres = genresData.genres
+        
+        const shuffled = [...allGenres].sort(() => Math.random() - 0.5)
+        const selectedGenres = shuffled.slice(0, 4)
+
+        const genrePromises = selectedGenres.map(genre => 
+            getTVByGenre(genre.id, 1)
+        )
+
+        const [popularData, ...genreResults] = await Promise.all([
+            getPopularTVShows(1),
+            ...genrePromises
+        ])
+
+        const heroFilm = popularData.results[Math.floor(Math.random() * Math.min(5, popularData.results.length))]
+        let videoKey: string | undefined
+
+        if (heroFilm) {
+            videoKey = await getTrailerKey("tv", heroFilm.id)
+        }
+
+        const heroData: HeroData | null = heroFilm ? {
+            id: heroFilm.id,
+            title: heroFilm.name || "",
+            overview: heroFilm.overview,
+            backdrop_path: heroFilm.backdrop_path || "",
+            poster_path: heroFilm.poster_path || "",
+            release_date: heroFilm.first_air_date || "",
+            vote_average: heroFilm.vote_average,
+            genres: [],
+            runtime: undefined,
+            certification: undefined,
+            media_type: "tv",
+            video_key: videoKey,
+        } : null
+
+        const genreSections = selectedGenres.map((genre, index) => ({
+            genreId: genre.id,
+            genreName: genre.name,
+            films: genreResults[index].results.slice(0, 12).map(f => ({ ...f, media_type: "tv" as const }))
+        }))
+
+        return { heroData, genreSections }
+    } catch (error) {
+        console.error("Error loading TV shows:", error)
+        return { heroData: null, genreSections: [] }
+    }
+}
+
+export async function loadGenreFilms(
+    genreId: number,
+    mediaType: "movie" | "tv",
+    page = 1
+): Promise<{ results: Film[]; total_pages: number; genreName: string }> {
+    try {
+        const [genresData, filmsData] = await Promise.all([
+            mediaType === "movie" ? getMovieGenres() : getTVGenres(),
+            mediaType === "movie" ? getMoviesByGenre(genreId, page) : getTVByGenre(genreId, page)
+        ])
+
+        const genre = genresData.genres.find(g => g.id === genreId)
+        const genreName = genre?.name || "Unknown Genre"
+
+        return {
+            results: filmsData.results.map(f => ({ ...f, media_type: mediaType })),
+            total_pages: filmsData.total_pages,
+            genreName
+        }
+    } catch (error) {
+        console.error("Error loading genre films:", error)
+        return { results: [], total_pages: 0, genreName: "Unknown Genre" }
+    }
+}
