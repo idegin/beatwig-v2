@@ -211,7 +211,6 @@ export interface FilmDetailsData {
   keywords: Keyword[]
   similar: Film[]
   seasons?: Season[]
-  episodes?: { [seasonNumber: number]: Episode[] }
 }
 
 export interface FilmDetails {

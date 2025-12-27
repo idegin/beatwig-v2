@@ -113,7 +113,6 @@ export default async function Page() {
         actionMovies={data.actionMovies}
         popularOnApp={data.popularOnApp}
         genres={data.genres}
-        networks={data.networks}
         popularPeople={data.popularPeople}
         heroData={data.heroData}
       />

@@ -4,10 +4,9 @@ import { PageSection } from "@/components/page-section"
 import { ContinueWatching } from "./continue-watching"
 import { FilmRow } from "@/components/film-row"
 import { GenreRow } from "./genre-row"
-import { NetworkRow } from "./network-row"
 import { PeopleRow } from "./people-row"
 import { ContinueWatchingItem } from "@/types/firebase.types"
-import { Film, Genre, HeroData, Network, Person } from "@/types/tmdb.types"
+import { Film, Genre, HeroData, Person } from "@/types/tmdb.types"
 import { appData } from "@/app/constants"
 
 interface HomeProps {
@@ -22,7 +21,6 @@ interface HomeProps {
     actionMovies: Film[]
     popularOnApp: Film[]
     genres: Genre[]
-    networks: Network[]
     heroData: HeroData
     popularPeople?: Person[]
 }
@@ -36,7 +34,6 @@ export default function Home({
     actionMovies,
     popularOnApp,
     genres,
-    networks,
     popularPeople,
 }: HomeProps) {
     return (
@@ -104,14 +101,6 @@ export default function Home({
                 altLink={{ route: "/popular", text: "View All" }}
             >
                 <FilmRow films={popularOnApp} variant="compact" />
-            </PageSection>
-
-            <PageSection
-                heading="Browse by Network"
-                subHeading="Explore content from top streaming networks"
-                altLink={{ route: "/networks", text: "All Networks" }}
-            >
-                <NetworkRow networks={networks} />
             </PageSection>
 
             <PageSection

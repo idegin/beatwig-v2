@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Play, Plus, Volume2, VolumeX, Info, Video, VideoOff, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppSettings } from "@/context/app-settings-context"
@@ -15,6 +16,18 @@ const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
 export function HomeHero({ data }: HomeHeroProps) {
   const { settings, updateSettings } = useAppSettings()
   const videoRef = React.useRef<HTMLVideoElement>(null)
+
+  const slugify = (text: string) => {
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/--+/g, "-")
+      .trim()
+  }
+
+  const filmSlug = slugify(data.title)
+  const filmUrl = `/film/${data.media_type}/${data.id}/${filmSlug}`
 
   const backdropUrl = data.backdrop_path
     ? `${TMDB_IMAGE_BASE}/original${data.backdrop_path}`
@@ -64,9 +77,9 @@ export function HomeHero({ data }: HomeHeroProps) {
           />
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-background via-background/40 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-b from-black/50 via-transparent to-transparent" />
       </div>
 
       <div className="relative z-10 flex h-full flex-col justify-end pb-32 md:pb-40">
@@ -82,9 +95,11 @@ export function HomeHero({ data }: HomeHeroProps) {
               </span>
             </div>
 
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground drop-shadow-lg md:text-5xl lg:text-6xl">
-              {data.title}
-            </h1>
+            <Link href={filmUrl}>
+              <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground drop-shadow-lg md:text-5xl lg:text-6xl hover:text-primary transition-colors cursor-pointer">
+                {data.title}
+              </h1>
+            </Link>
 
             <p className="text-base leading-relaxed text-muted-foreground md:text-lg line-clamp-3">
               {data.overview}
@@ -123,10 +138,13 @@ export function HomeHero({ data }: HomeHeroProps) {
               <Button
                 size="lg"
                 variant="ghost"
+                asChild
                 className="h-12 gap-2 rounded-full px-6 text-base font-medium text-foreground/80 transition-all hover:bg-foreground/10 hover:text-foreground"
               >
-                <Info className="size-5" />
-                More Info
+                <Link href={filmUrl}>
+                  <Info className="size-5" />
+                  More Info
+                </Link>
               </Button>
             </div>
           </div>
@@ -169,7 +187,7 @@ export function HomeHero({ data }: HomeHeroProps) {
         )}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-10 h-32 bg-gradient-to-t from-background to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 z-10 h-32 bg-linear-to-t from-background to-transparent" />
     </section>
   )
 }

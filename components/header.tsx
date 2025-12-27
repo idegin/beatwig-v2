@@ -38,6 +38,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { appData } from "@/app/constants"
 
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
@@ -66,7 +67,7 @@ export function Header() {
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
           ? "bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm"
-          : "bg-gradient-to-b from-black/80 to-transparent"
+          : "bg-linear-to-b from-black/80 to-transparent"
       )}
     >
       <div className="container mx-auto px-4">
@@ -80,8 +81,8 @@ export function Header() {
                 height={40}
                 className="rounded-lg"
               />
-              <span className="hidden text-xl font-bold text-primary sm:block">
-                BeatWig
+              <span className="hidden text-xl font-bold sm:block font-(family-name:--font-playfair-display)">
+                {appData.name}
               </span>
             </Link>
 
@@ -200,7 +201,7 @@ export function Header() {
                       height={40}
                       className="rounded-lg"
                     />
-                    <span className="text-xl font-bold text-primary">
+                    <span className="text-xl font-bold text-primary font-(family-name:--font-playfair-display)">
                       BeatWig
                     </span>
                   </SheetTitle>

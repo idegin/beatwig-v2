@@ -1,7 +1,7 @@
-import { Film, Genre, Network, Person, HeroData } from "@/types/tmdb.types"
+import { TMDB_ACCESS_TOKEN, TMDB_BASE_URL } from "@/app/constants"
+import { Film, Genre, Person, HeroData, FilmDetailsData, CastMember, CrewMember, Video, Image, Review, Keyword, Season, Episode, ProductionCompany, ProductionCountry, SpokenLanguage } from "@/types/tmdb.types"
 
-const TMDB_ACCESS_TOKEN = process.env.TMDB_API_KEY
-const TMDB_BASE_URL = "https://api.themoviedb.org/3"
+
 
 interface TMDBOptions {
     adult?: boolean
@@ -139,7 +139,8 @@ export async function getHomePageData() {
             getPopularPeople(),
         ])
 
-        const heroFilm = trendingData.results[0]
+        const randomIndex = Math.floor(Math.random() * Math.min(5, trendingData.results.length))
+        const heroFilm = trendingData.results[randomIndex]
         let videoKey: string | undefined
 
         if (heroFilm) {
@@ -180,14 +181,7 @@ export async function getHomePageData() {
             })),
         }
 
-        const networks: Network[] = [
-            { id: 213, name: "Netflix", logo_path: "/wwemzKWzjKYJFfCeiB57q3r4Bcm.png", origin_country: "US" },
-            { id: 2739, name: "Disney+", logo_path: "/gJ8VX6JSu3ciXHuC2dDGAo2lvwM.png", origin_country: "US" },
-            { id: 1024, name: "Amazon Prime", logo_path: "/ifhbNuuVnlwYy5oXA5VIb2YR8AZ.png", origin_country: "US" },
-            { id: 49, name: "HBO", logo_path: "/tuomPhY2UtuPTqqFnKMVHvSb724.png", origin_country: "US" },
-            { id: 2552, name: "Apple TV+", logo_path: "/4KAy34EHvRM25Ih8wb82AuGU7zJ.png", origin_country: "US" },
-            { id: 453, name: "Hulu", logo_path: "/pqUTCleNUiTLAVlelGxUgWn1ELh.png", origin_country: "US" },
-        ]
+        const networks = undefined
 
         return {
             heroData,
@@ -197,131 +191,95 @@ export async function getHomePageData() {
             actionMovies: action,
             popularOnApp: popular,
             genres,
-            networks,
             becauseYouWatched,
             popularPeople,
         }
     } catch (error) {
-        console.error("Error fetching TMDB data, using fallback:", error)
-        return getFallbackHomePageData()
+        console.error("Error fetching TMDB data:", error)
+        return {
+            heroData: null,
+            nowShowingInTheaters: [],
+            upcomingMovies: [],
+            romanceMovies: [],
+            actionMovies: [],
+            popularOnApp: [],
+            genres: [],
+            becauseYouWatched: { title: "", films: [] },
+            popularPeople: [],
+        }
     }
 }
 
-function getFallbackHomePageData() {
-    const heroData: HeroData = {
-        id: 693134,
-        title: "Dune: Part Two",
-        overview: "Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen while on a path of revenge against the conspirators who destroyed his family. Facing a choice between the love of his life and the fate of the known universe, he endeavors to prevent a terrible future only he can foresee.",
-        backdrop_path: "/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg",
-        poster_path: "/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
-        release_date: "2024-02-27",
-        vote_average: 8.3,
-        genres: ["Action", "Adventure", "Sci-Fi"],
-        runtime: 166,
-        certification: "PG-13",
-        media_type: "movie",
-        video_key: "Way9Dexny3w",
+export async function getFilmDetails(id: number, mediaType: "movie" | "tv"): Promise<FilmDetailsData> {
+    const endpoint = mediaType === "movie" ? `/movie/${id}` : `/tv/${id}`
+    const data = await fetchTMDB<Record<string, unknown>>(endpoint, {
+        append_to_response: "videos,credits,reviews,keywords,similar,images"
+    })
+
+    const isTV = mediaType === "tv"
+    const title = isTV ? (data.name as string) : (data.title as string)
+    const releaseDate = isTV ? (data.first_air_date as string) : (data.release_date as string)
+    const runtime = isTV ? (data.episode_run_time as number[])?.[0] : (data.runtime as number)
+
+    const videos = ((data.videos as { results: Video[] })?.results || []).filter(
+        (v: Video) => v.site === "YouTube"
+    )
+    const trailer = videos.find((v: Video) => v.type === "Trailer") || videos[0]
+
+    const genres = ((data.genres as { id: number; name: string }[]) || []).map((g) => g.name)
+
+    const credits = data.credits as { cast: CastMember[]; crew: CrewMember[] } | undefined
+    const cast = (credits?.cast || []).slice(0, 15)
+    const crew = credits?.crew || []
+
+    const images = data.images as { backdrops: Image[]; posters: Image[] } | undefined
+    const backdrops = (images?.backdrops || []).slice(0, 12)
+    const posters = (images?.posters || []).slice(0, 8)
+
+    const reviews = ((data.reviews as { results: Review[] })?.results || []).slice(0, 10)
+    const keywords = mediaType === "movie"
+        ? ((data.keywords as { keywords: Keyword[] })?.keywords || [])
+        : ((data.keywords as { results: Keyword[] })?.results || [])
+
+    const similar = ((data.similar as { results: Film[] })?.results || []).slice(0, 12).map((f) => ({
+        ...f,
+        media_type: mediaType,
+    }))
+
+    let seasons: Season[] | undefined
+    if (isTV) {
+        seasons = (data.seasons as Season[]) || []
     }
-
-    const nowShowingInTheaters: Film[] = [
-        { id: 693134, adult: false, backdrop_path: "/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg", genre_ids: [28, 12, 878], original_language: "en", original_title: "Dune: Part Two", overview: "Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen.", popularity: 850.5, poster_path: "/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg", release_date: "2024-02-27", title: "Dune: Part Two", video: false, vote_average: 8.3, vote_count: 5200, media_type: "movie" },
-        { id: 823464, adult: false, backdrop_path: "/417tYZ4XUyJrtyZXj7HpvWf1E8f.jpg", genre_ids: [16, 28, 12], original_language: "ja", original_title: "Godzilla x Kong", overview: "The legendary titans face a brand new threat lurking within our world.", popularity: 720.3, poster_path: "/z1p34vh7dEOnLDmyCrlUVLuoDzd.jpg", release_date: "2024-03-27", title: "Godzilla x Kong: The New Empire", video: false, vote_average: 7.1, vote_count: 3100, media_type: "movie" },
-        { id: 940721, adult: false, backdrop_path: "/kYgQzzjNis5jJalYtIHgrom0gOx.jpg", genre_ids: [16, 10751, 35, 14], original_language: "en", original_title: "Inside Out 2", overview: "Teenager Riley's mind headquarters is undergoing a sudden demolition to make room for something entirely unexpected.", popularity: 950.8, poster_path: "/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg", release_date: "2024-06-11", title: "Inside Out 2", video: false, vote_average: 7.8, vote_count: 4500, media_type: "movie" },
-        { id: 653346, adult: false, backdrop_path: "/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg", genre_ids: [28, 12, 878], original_language: "en", original_title: "Kingdom of the Planet of the Apes", overview: "Several generations in the future following Caesar's reign.", popularity: 680.2, poster_path: "/gKkl37BQuKTanygYQG1pyYgLVgf.jpg", release_date: "2024-05-08", title: "Kingdom of the Planet of the Apes", video: false, vote_average: 7.2, vote_count: 2800, media_type: "movie" },
-        { id: 569094, adult: false, backdrop_path: "/4XM8DUTQb3lhLemJC51Jx4a2EuA.jpg", genre_ids: [28, 12, 878], original_language: "en", original_title: "Spider-Man: Across the Spider-Verse", overview: "Miles Morales catapults across the Multiverse.", popularity: 380.2, poster_path: "/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg", release_date: "2023-05-31", title: "Spider-Man: Across the Spider-Verse", video: false, vote_average: 8.4, vote_count: 6200, media_type: "movie" },
-        { id: 447365, adult: false, backdrop_path: "/t9nyF3r0WAlJ7Kr6xcRYI4jr9jm.jpg", genre_ids: [28, 12, 878], original_language: "en", original_title: "Guardians of the Galaxy Vol. 3", overview: "Peter Quill must rally his team around him.", popularity: 290.4, poster_path: "/r2J02Z2OpNTctfOSN1Ydgii51I3.jpg", release_date: "2023-05-03", title: "Guardians of the Galaxy Vol. 3", video: false, vote_average: 8.0, vote_count: 5800, media_type: "movie" },
-    ]
-
-    const upcomingMovies: Film[] = [
-        { id: 912649, adult: false, backdrop_path: "/fDmci71SMkfZM8RnCuXJVDPaSdE.jpg", genre_ids: [16, 10751, 35, 12], original_language: "en", original_title: "Moana 2", overview: "Moana journeys alongside Maui and a new crew to the far seas of Oceania.", popularity: 520.8, poster_path: "/4YZpsylmjHbqeWzjKpUEF8gcLNW.jpg", release_date: "2025-11-27", title: "Moana 2", video: false, vote_average: 7.0, vote_count: 100, media_type: "movie" },
-        { id: 668489, adult: false, backdrop_path: "/fY3lD0jM5AoHJMunjGWqJ0hRteI.jpg", genre_ids: [878, 12, 28], original_language: "en", original_title: "Superman", overview: "Superman embarks on a journey to reconcile his Kryptonian heritage.", popularity: 480.5, poster_path: "/d7PIR3cAMsLzEzUbP2hqJy3LyI1.jpg", release_date: "2025-07-11", title: "Superman", video: false, vote_average: 0, vote_count: 0, media_type: "movie" },
-        { id: 1064028, adult: false, backdrop_path: "/9nhjGaFLKtddDPtPaX5EmKqsWdH.jpg", genre_ids: [28, 878, 12], original_language: "en", original_title: "Captain America: Brave New World", overview: "Sam Wilson finds himself in the middle of an international incident.", popularity: 420.3, poster_path: "/pzIddUEMWhWzfvLI3TwxUG2wGoi.jpg", release_date: "2025-02-14", title: "Captain America: Brave New World", video: false, vote_average: 0, vote_count: 0, media_type: "movie" },
-        { id: 986056, adult: false, backdrop_path: "/45zVtZx6Tzx3RKeDziK5NsGDPpm.jpg", genre_ids: [28, 878, 12], original_language: "en", original_title: "Thunderbolts", overview: "A group of antiheroes are recruited by the government.", popularity: 350.2, poster_path: "/gQa28VnHNBNq9lPtSxFI2vqjBKz.jpg", release_date: "2025-05-02", title: "Thunderbolts*", video: false, vote_average: 0, vote_count: 0, media_type: "movie" },
-        { id: 1001311, adult: false, backdrop_path: "/6Wdl9N6dL0Hi0T1qJLWSz6gMLbd.jpg", genre_ids: [28, 12, 53], original_language: "en", original_title: "Mission: Impossible", overview: "Ethan Hunt and the IMF team must track down a terrifying new weapon.", popularity: 320.8, poster_path: "/z0gMfqfyU6VR5a6LjTHG8b2MWDQ.jpg", release_date: "2025-05-23", title: "Mission: Impossible – The Final Reckoning", video: false, vote_average: 0, vote_count: 0, media_type: "movie" },
-        { id: 950387, adult: false, backdrop_path: "/xlkclSE4aq7r3JsFIJRgs21zUew.jpg", genre_ids: [27, 9648, 53], original_language: "en", original_title: "A Quiet Place: Day One", overview: "As New York City is invaded by alien creatures who hunt by sound.", popularity: 380.6, poster_path: "/hU42CRk14JuPEdqZG3AWmagiPAP.jpg", release_date: "2024-06-28", title: "A Quiet Place: Day One", video: false, vote_average: 7.0, vote_count: 1500, media_type: "movie" },
-    ]
-
-    const romanceMovies: Film[] = [
-        { id: 597, adult: false, backdrop_path: "/8lTMhLGdqYoScxdZqFfs5BKQJ7Z.jpg", genre_ids: [18, 10749], original_language: "en", original_title: "Titanic", overview: "101-year-old Rose DeWitt Bukater tells the story of her life aboard the Titanic.", popularity: 110.5, poster_path: "/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg", release_date: "1997-11-18", title: "Titanic", video: false, vote_average: 7.9, vote_count: 23000, media_type: "movie" },
-        { id: 313369, adult: false, backdrop_path: "/ndlQ2Cuc3cjTL7lTynw6I4boP4S.jpg", genre_ids: [10749, 18], original_language: "en", original_title: "La La Land", overview: "Mia and Sebastian are faced with decisions that begin to fray their love affair.", popularity: 75.8, poster_path: "/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg", release_date: "2016-11-29", title: "La La Land", video: false, vote_average: 7.9, vote_count: 15000, media_type: "movie" },
-        { id: 332562, adult: false, backdrop_path: "/wrFpXMNBRj2PBiN4Z5kix51XaIZ.jpg", genre_ids: [10749, 18], original_language: "en", original_title: "A Star Is Born", overview: "Seasoned musician Jackson Maine discovers and falls in love with struggling artist Ally.", popularity: 88.2, poster_path: "/wrFpXMNBRj2PBiN4Z5kix51XaIZ.jpg", release_date: "2018-10-03", title: "A Star Is Born", video: false, vote_average: 7.5, vote_count: 11000, media_type: "movie" },
-        { id: 11036, adult: false, backdrop_path: "/gL8myjGc2qrmqVosyGm5CWTir9A.jpg", genre_ids: [35, 18, 10749], original_language: "en", original_title: "The Notebook", overview: "An epic love story centered around an older man who reads aloud to a woman.", popularity: 82.4, poster_path: "/rNzQyW4f8B8cQeg7Dgj3n6eT5k9.jpg", release_date: "2004-06-25", title: "The Notebook", video: false, vote_average: 7.9, vote_count: 10500, media_type: "movie" },
-        { id: 509, adult: false, backdrop_path: "/2Ie92LDycpAsQzWqL1DRqx41Dn.jpg", genre_ids: [18, 10749], original_language: "en", original_title: "Notting Hill", overview: "William Thacker's humdrum existence is thrown into romantic turmoil.", popularity: 65.3, poster_path: "/bGl7QxsxflrPw7E9pDPpwvJZks2.jpg", release_date: "1999-05-13", title: "Notting Hill", video: false, vote_average: 7.2, vote_count: 5800, media_type: "movie" },
-        { id: 76341, adult: false, backdrop_path: "/nlCHUWjY9XWbuEUQauCBgnGcoe.jpg", genre_ids: [10749, 35], original_language: "en", original_title: "Crazy Rich Asians", overview: "An American-born Chinese economics professor accompanies her boyfriend to Singapore.", popularity: 68.9, poster_path: "/1XxL4LJ5WHdrcYcihEZUCgNCpAW.jpg", release_date: "2018-08-15", title: "Crazy Rich Asians", video: false, vote_average: 7.1, vote_count: 4200, media_type: "movie" },
-    ]
-
-    const actionMovies: Film[] = [
-        { id: 603692, adult: false, backdrop_path: "/h8gHn0OzBoaefsYseUByqsmEDMY.jpg", genre_ids: [28, 53, 80], original_language: "en", original_title: "John Wick: Chapter 4", overview: "John Wick uncovers a path to defeating The High Table.", popularity: 310.5, poster_path: "/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg", release_date: "2023-03-22", title: "John Wick: Chapter 4", video: false, vote_average: 7.9, vote_count: 8500, media_type: "movie" },
-        { id: 385687, adult: false, backdrop_path: "/bWm2kLu0EE0r8YuH3VHV0Af3s5O.jpg", genre_ids: [28, 12, 878], original_language: "en", original_title: "Fast X", overview: "Dom Toretto and his family face the most lethal opponent they've ever faced.", popularity: 280.3, poster_path: "/fiVW06jE7z9YnO4trhaMEdclSiC.jpg", release_date: "2023-05-17", title: "Fast X", video: false, vote_average: 7.1, vote_count: 5200, media_type: "movie" },
-        { id: 667538, adult: false, backdrop_path: "/8pjWz2lt29KyVGoq1mXYu6Br7dE.jpg", genre_ids: [28, 878, 27], original_language: "en", original_title: "Transformers: Rise of the Beasts", overview: "Optimus Prime and the Autobots must team up with a powerful faction.", popularity: 220.6, poster_path: "/gPbM0MK8CP8A174rmUwGsADNYKD.jpg", release_date: "2023-06-06", title: "Transformers: Rise of the Beasts", video: false, vote_average: 7.3, vote_count: 3900, media_type: "movie" },
-        { id: 640146, adult: false, backdrop_path: "/8YFL5QQVPy3AgrEQxNYVSgiPEbe.jpg", genre_ids: [28, 12, 878], original_language: "en", original_title: "Ant-Man and the Wasp: Quantumania", overview: "The Lang-Van Dyne family find themselves exploring the Quantum Realm.", popularity: 250.8, poster_path: "/ngl2FKBlU4fhbdsrtdom9LVLBXw.jpg", release_date: "2023-02-15", title: "Ant-Man and the Wasp: Quantumania", video: false, vote_average: 6.5, vote_count: 4800, media_type: "movie" },
-        { id: 155, adult: false, backdrop_path: "/nMKdUUepR0i5zn0y1T4CsSB5chy.jpg", genre_ids: [28, 80, 18, 53], original_language: "en", original_title: "The Dark Knight", overview: "Batman raises the stakes in his war on crime.", popularity: 130.4, poster_path: "/qJ2tW6WMUDux911r6m7haRef0WH.jpg", release_date: "2008-07-16", title: "The Dark Knight", video: false, vote_average: 8.5, vote_count: 30000, media_type: "movie" },
-        { id: 27205, adult: false, backdrop_path: "/s3TBrRGB1iav7gFOCNx3H31MoES.jpg", genre_ids: [28, 878, 12], original_language: "en", original_title: "Inception", overview: "Cobb steals information from his targets by entering their dreams.", popularity: 150.5, poster_path: "/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg", release_date: "2010-07-15", title: "Inception", video: false, vote_average: 8.4, vote_count: 32000, media_type: "movie" },
-    ]
-
-    const popularOnApp: Film[] = [
-        { id: 76600, adult: false, backdrop_path: "/ovM06PdF3M8wvKb06i4sjW3xoww.jpg", genre_ids: [878, 12, 28], original_language: "en", original_title: "Avatar: The Way of Water", overview: "Learn the story of the Sully family.", popularity: 450.5, poster_path: "/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg", release_date: "2022-12-14", title: "Avatar: The Way of Water", video: false, vote_average: 7.7, vote_count: 11000, media_type: "movie" },
-        { id: 502356, adult: false, backdrop_path: "/iJQIbOPm81fPEGKt5BPuZmfnA54.jpg", genre_ids: [16, 12, 10751, 14, 35], original_language: "en", original_title: "The Super Mario Bros. Movie", overview: "Mario and Luigi are transported down a mysterious pipe.", popularity: 380.2, poster_path: "/qNBAXBIQlnOThrVvA6mA2B5ggV6.jpg", release_date: "2023-04-05", title: "The Super Mario Bros. Movie", video: false, vote_average: 7.5, vote_count: 8200, media_type: "movie" },
-        { id: 315162, adult: false, backdrop_path: "/ouB7hwclG7QI3INoYJHaZL4vOaa.jpg", genre_ids: [16, 10751, 14, 12, 35, 18], original_language: "en", original_title: "Puss in Boots: The Last Wish", overview: "Puss in Boots discovers he has burned through eight of his nine lives.", popularity: 320.8, poster_path: "/kuf6dutpsT0vSVehic3EZIqkOBt.jpg", release_date: "2022-12-07", title: "Puss in Boots: The Last Wish", video: false, vote_average: 8.3, vote_count: 7500, media_type: "movie" },
-        { id: 94997, adult: false, backdrop_path: "/suopoADq0k8YZr4dQXcU6pToj6s.jpg", genre_ids: [10765, 18, 10759], original_language: "en", overview: "The Targaryen dynasty is at the absolute apex of its power.", popularity: 420.5, poster_path: "/z2yahl2uefxDCl0nogcRBstwruJ.jpg", first_air_date: "2022-08-21", name: "House of the Dragon", vote_average: 8.4, vote_count: 4200, media_type: "tv" },
-        { id: 1396, adult: false, backdrop_path: "/84XPpjGvxNyExjSuLQe0SzioErt.jpg", genre_ids: [18, 80], original_language: "en", overview: "A New Mexico chemistry teacher is diagnosed with Stage III cancer.", popularity: 380.8, poster_path: "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg", first_air_date: "2008-01-20", name: "Breaking Bad", vote_average: 8.9, vote_count: 12000, media_type: "tv" },
-        { id: 66732, adult: false, backdrop_path: "/56v2KjBlU4XaOv9rVYEQypROD7P.jpg", genre_ids: [18, 10765], original_language: "en", overview: "When a young boy vanishes, a small town uncovers a mystery.", popularity: 350.2, poster_path: "/49WJfeN0moxb9IPfGn8AIqMGskD.jpg", first_air_date: "2016-07-15", name: "Stranger Things", vote_average: 8.6, vote_count: 16000, media_type: "tv" },
-    ]
-
-    const genres: Genre[] = [
-        { id: 28, name: "Action" }, { id: 12, name: "Adventure" }, { id: 16, name: "Animation" }, { id: 35, name: "Comedy" },
-        { id: 80, name: "Crime" }, { id: 99, name: "Documentary" }, { id: 18, name: "Drama" }, { id: 10751, name: "Family" },
-        { id: 14, name: "Fantasy" }, { id: 36, name: "History" }, { id: 27, name: "Horror" }, { id: 10402, name: "Music" },
-        { id: 9648, name: "Mystery" }, { id: 10749, name: "Romance" }, { id: 878, name: "Science Fiction" }, { id: 53, name: "Thriller" },
-    ]
-
-    const networks: Network[] = [
-        { id: 213, name: "Netflix", logo_path: "/wwemzKWzjKYJFfCeiB57q3r4Bcm.png", origin_country: "US" },
-        { id: 2739, name: "Disney+", logo_path: "/gJ8VX6JSu3ciXHuC2dDGAo2lvwM.png", origin_country: "US" },
-        { id: 1024, name: "Amazon Prime", logo_path: "/ifhbNuuVnlwYy5oXA5VIb2YR8AZ.png", origin_country: "US" },
-        { id: 49, name: "HBO", logo_path: "/tuomPhY2UtuPTqqFnKMVHvSb724.png", origin_country: "US" },
-        { id: 2552, name: "Apple TV+", logo_path: "/4KAy34EHvRM25Ih8wb82AuGU7zJ.png", origin_country: "US" },
-        { id: 453, name: "Hulu", logo_path: "/pqUTCleNUiTLAVlelGxUgWn1ELh.png", origin_country: "US" },
-    ]
-
-    const becauseYouWatched = {
-        title: "Inception",
-        films: [
-            { id: 157336, adult: false, backdrop_path: "/xJHokMbljvjADYdit5fK5VQsXEG.jpg", genre_ids: [18, 878, 53], original_language: "en", original_title: "Tenet", overview: "Armed with only one word - Tenet.", popularity: 120.3, poster_path: "/k68nPLbIST6NP96JmTxmZijEvCA.jpg", release_date: "2020-08-22", title: "Tenet", video: false, vote_average: 7.2, vote_count: 8500, media_type: "movie" as const },
-            { id: 272, adult: false, backdrop_path: "/66TuALbLYNPC5Jxd4JFgLn8K3hs.jpg", genre_ids: [28, 80, 18, 53], original_language: "en", original_title: "Batman Begins", overview: "Bruce Wayne dedicates his life to uncovering corruption.", popularity: 95.2, poster_path: "/8RW2runSEc34IwKN2D1aPcJd2UL.jpg", release_date: "2005-06-10", title: "Batman Begins", video: false, vote_average: 7.7, vote_count: 18000, media_type: "movie" as const },
-            { id: 155, adult: false, backdrop_path: "/nMKdUUepR0i5zn0y1T4CsSB5chy.jpg", genre_ids: [28, 80, 18, 53], original_language: "en", original_title: "The Dark Knight", overview: "Batman raises the stakes in his war on crime.", popularity: 130.4, poster_path: "/qJ2tW6WMUDux911r6m7haRef0WH.jpg", release_date: "2008-07-16", title: "The Dark Knight", video: false, vote_average: 8.5, vote_count: 30000, media_type: "movie" as const },
-            { id: 49026, adult: false, backdrop_path: "/f6ljQGv7WnJuwBPty017oPWfqjx.jpg", genre_ids: [28, 80, 53], original_language: "en", original_title: "The Dark Knight Rises", overview: "Batman assumes responsibility for Dent's crimes.", popularity: 88.7, poster_path: "/hr0L2aueqlP2BYUblTTjmtn0hw4.jpg", release_date: "2012-07-16", title: "The Dark Knight Rises", video: false, vote_average: 7.8, vote_count: 21000, media_type: "movie" as const },
-            { id: 258489, adult: false, backdrop_path: "/5WP6z3iqsRg8ZWHM9Xa5GsVLKD3.jpg", genre_ids: [18, 53, 878], original_language: "en", original_title: "The Prestige", overview: "Two magicians engage in a life-long battle for supremacy.", popularity: 75.3, poster_path: "/tRNlZbgNCNOpLpbPEz5L8G8A0JN.jpg", release_date: "2006-10-17", title: "The Prestige", video: false, vote_average: 8.2, vote_count: 14000, media_type: "movie" as const },
-            { id: 27205, adult: false, backdrop_path: "/s3TBrRGB1iav7gFOCNx3H31MoES.jpg", genre_ids: [28, 878, 12], original_language: "en", original_title: "Interstellar", overview: "A group of explorers surpass the limitations on human space travel.", popularity: 150.5, poster_path: "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", release_date: "2014-11-05", title: "Interstellar", video: false, vote_average: 8.4, vote_count: 32000, media_type: "movie" as const },
-        ],
-    }
-
-    const popularPeople: Person[] = [
-    { id: 1136406, name: "Tom Holland", profile_path: "/bBRlrpJm9XkNSg0YT5LCaxqoFMX.jpg", known_for_department: "Acting", popularity: 120.5 },
-    { id: 1245, name: "Scarlett Johansson", profile_path: "/6NsMbJXRlDZuDzatN2akFY8J3IS.jpg", known_for_department: "Acting", popularity: 115.2 },
-    { id: 17419, name: "Zendaya", profile_path: "/6TE2AlOUqcKAitORHo6KdyQmDYZ.jpg", known_for_department: "Acting", popularity: 110.8 },
-    { id: 1892, name: "Matt Damon", profile_path: "/elSlNgV8xVFRgBBYoOehRqSQvVt.jpg", known_for_department: "Acting", popularity: 95.3 },
-    { id: 500, name: "Tom Cruise", profile_path: "/8qBylBsQf4llkGrWR3qAsOtOU8O.jpg", known_for_department: "Acting", popularity: 130.1 },
-    { id: 73457, name: "Chris Pratt", profile_path: "/83o3koL82jt30EJ0rz4Bnzrt2dd.jpg", known_for_department: "Acting", popularity: 88.6 },
-    { id: 1190668, name: "Timothée Chalamet", profile_path: "/BE2sdjpgsa2rNTFa66f7upkaOP.jpg", known_for_department: "Acting", popularity: 140.2 },
-    { id: 560057, name: "Florence Pugh", profile_path: "/6chZcnjWEiFfpmB6D5XpA4qYg5h.jpg", known_for_department: "Acting", popularity: 105.4 },
-    { id: 2963, name: "Ana de Armas", profile_path: "/3vxvsmYLTf4jnr163SUlBIw51ee.jpg", known_for_department: "Acting", popularity: 98.7 },
-    { id: 6193, name: "Leonardo DiCaprio", profile_path: "/wo2hJpn04vbtmh0B9utCFdsQhxM.jpg", known_for_department: "Acting", popularity: 125.9 },
-    { id: 72129, name: "Jennifer Lawrence", profile_path: "/mDKMsjOMytyBiy86dIkDN4MQBf4.jpg", known_for_department: "Acting", popularity: 92.1 },
-    { id: 3223, name: "Robert Downey Jr.", profile_path: "/5qHNjhtjMD4YWH3UP0rm4tKwxCL.jpg", known_for_department: "Acting", popularity: 118.4 },
-    ]
 
     return {
-        heroData,
-        nowShowingInTheaters,
-        upcomingMovies,
-        romanceMovies,
-        actionMovies,
-        popularOnApp,
+        id: data.id as number,
+        title,
+        tagline: data.tagline as string | undefined,
+        overview: data.overview as string,
+        poster_path: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : "",
+        backdrop_path: data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : "",
+        release_date: releaseDate || "",
+        vote_average: data.vote_average as number,
+        runtime,
         genres,
-        networks,
-        becauseYouWatched,
-        popularPeople,
+        status: data.status as string,
+        original_language: data.original_language as string,
+        budget: data.budget as number | undefined,
+        revenue: data.revenue as number | undefined,
+        video_key: trailer?.key,
+        number_of_seasons: isTV ? (data.number_of_seasons as number) : undefined,
+        number_of_episodes: isTV ? (data.number_of_episodes as number) : undefined,
+        production_companies: (data.production_companies as ProductionCompany[]) || [],
+        production_countries: (data.production_countries as ProductionCountry[]) || [],
+        spoken_languages: (data.spoken_languages as SpokenLanguage[]) || [],
+        cast,
+        crew,
+        videos,
+        backdrops,
+        posters,
+        reviews,
+        keywords,
+        similar,
+        seasons,
     }
 }
-

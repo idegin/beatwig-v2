@@ -141,7 +141,7 @@ export function FilmCard({ film, variant = "default" }: FilmCardProps) {
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="font-bold text-white text-base line-clamp-2 drop-shadow-lg mb-1 group-hover:text-primary transition-colors">
+                    <h3 className="font-bold text-white text-base line-clamp-2 drop-shadow-lg mb-1 transition-colors">
                         {title}
                     </h3>
                     <div className="flex items-center gap-2 text-xs text-white/70">

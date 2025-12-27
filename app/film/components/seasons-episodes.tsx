@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 interface Episode {
@@ -39,8 +39,44 @@ interface Season {
 
 interface SeasonsEpisodesProps {
   seasons: Season[]
-  episodes: { [seasonNumber: number]: Episode[] }
   showId: number
+}
+
+function EpisodeCardSkeleton() {
+  return (
+    <div className="shrink-0 w-[180px] md:w-[200px]">
+      <Skeleton className="aspect-video rounded-lg" />
+      <div className="mt-2 px-1 space-y-1.5">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+    </div>
+  )
+}
+
+function EpisodeDetailsSkeleton() {
+  return (
+    <div className="bg-card/40 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-border/50">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+        <Skeleton className="shrink-0 w-full md:w-[280px] aspect-video rounded-lg" />
+        <div className="flex-1 space-y-3">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-7 w-48" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+          <div className="flex gap-4">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 w-28" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function CompactEpisodeCard({ 
@@ -191,21 +227,36 @@ function EpisodeDetails({ episode }: { episode: Episode }) {
   )
 }
 
-export function SeasonsEpisodes({ seasons, episodes, showId }: SeasonsEpisodesProps) {
+export function SeasonsEpisodes({ seasons, showId }: SeasonsEpisodesProps) {
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const validSeasons = seasons.filter((s) => s.season_number > 0)
   const [selectedSeason, setSelectedSeason] = React.useState(
     validSeasons.length > 0 ? validSeasons[validSeasons.length - 1].season_number.toString() : "1"
   )
-  const currentSeasonEpisodes = episodes[parseInt(selectedSeason)] || []
-  const [selectedEpisode, setSelectedEpisode] = React.useState<Episode | null>(
-    currentSeasonEpisodes.length > 0 ? currentSeasonEpisodes[0] : null
-  )
+  const [episodes, setEpisodes] = React.useState<Episode[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [selectedEpisode, setSelectedEpisode] = React.useState<Episode | null>(null)
 
   React.useEffect(() => {
-    const eps = episodes[parseInt(selectedSeason)] || []
-    setSelectedEpisode(eps.length > 0 ? eps[0] : null)
-  }, [selectedSeason, episodes])
+    async function fetchEpisodes() {
+      setIsLoading(true)
+      try {
+        const response = await fetch(`/api/public/episodes?showId=${showId}&season=${selectedSeason}`)
+        const data = await response.json()
+        const fetchedEpisodes = data.episodes || []
+        setEpisodes(fetchedEpisodes)
+        setSelectedEpisode(fetchedEpisodes.length > 0 ? fetchedEpisodes[0] : null)
+      } catch (error) {
+        console.error("Failed to fetch episodes:", error)
+        setEpisodes([])
+        setSelectedEpisode(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchEpisodes()
+  }, [showId, selectedSeason])
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -239,7 +290,21 @@ export function SeasonsEpisodes({ seasons, episodes, showId }: SeasonsEpisodesPr
         </Select>
       </div>
 
-      {currentSeasonEpisodes.length > 0 ? (
+      {isLoading ? (
+        <>
+          <div className="relative">
+            <div 
+              className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
+                <EpisodeCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+          <EpisodeDetailsSkeleton />
+        </>
+      ) : episodes.length > 0 ? (
         <>
           <div className="relative group/carousel">
             <div 
@@ -247,7 +312,7 @@ export function SeasonsEpisodes({ seasons, episodes, showId }: SeasonsEpisodesPr
               className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {currentSeasonEpisodes.map((episode) => (
+              {episodes.map((episode) => (
                 <CompactEpisodeCard 
                   key={episode.id} 
                   episode={episode}
@@ -256,7 +321,7 @@ export function SeasonsEpisodes({ seasons, episodes, showId }: SeasonsEpisodesPr
                 />
               ))}
             </div>
-            {currentSeasonEpisodes.length > 4 && (
+            {episodes.length > 4 && (
               <>
                 <Button
                   variant="secondary"

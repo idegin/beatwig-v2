@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { Star, ThumbsUp, ChevronDown, ChevronUp, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -91,11 +93,13 @@ function ReviewCard({ review }: { review: Review }) {
       <div
         ref={contentRef}
         className={cn(
-          "text-sm text-muted-foreground leading-relaxed overflow-hidden transition-all duration-300",
+          "text-sm text-muted-foreground leading-relaxed overflow-hidden transition-all duration-300 prose prose-sm dark:prose-invert prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 max-w-none",
           !isExpanded && "max-h-[120px]"
         )}
       >
-        <p className="whitespace-pre-line">{review.content}</p>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {review.content}
+        </ReactMarkdown>
       </div>
 
       {showExpandButton && (

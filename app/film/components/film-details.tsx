@@ -96,10 +96,9 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
             )}
 
             <div className="container mx-auto px-4 py-8 space-y-16">
-                {isTV && data.seasons && data.episodes && (
+                {isTV && data.seasons && (
                     <SeasonsEpisodes
                         seasons={data.seasons}
-                        episodes={data.episodes}
                         showId={data.id}
                     />
                 )}
