@@ -81,7 +81,7 @@ export function Header() {
                 height={40}
                 className="rounded-lg"
               />
-              <span className="hidden text-xl font-bold sm:block font-(family-name:--font-playfair-display)">
+              <span className="hidden text-2xl font-bold sm:block font-(family-name:--font-playfair-display)">
                 {appData.name}
               </span>
             </Link>

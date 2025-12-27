@@ -6,12 +6,11 @@ import { Play, Plus, Volume2, VolumeX, Info, Video, VideoOff, Star } from "lucid
 import { Button } from "@/components/ui/button"
 import { useAppSettings } from "@/context/app-settings-context"
 import { HeroData } from "@/types/tmdb.types"
+import { TMDB_IMAGE_BASE } from "@/app/constants"
 
 interface HomeHeroProps {
   data: HeroData
 }
-
-const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p"
 
 export function HomeHero({ data }: HomeHeroProps) {
   const { settings, updateSettings } = useAppSettings()

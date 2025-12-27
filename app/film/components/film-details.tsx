@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { FilmHero } from "@/app/film/components/film-hero"
 import { FilmInfo } from "@/app/film/components/film-info"
 import { CastCrew } from "@/app/film/components/cast-crew"
@@ -24,12 +25,25 @@ interface FilmDetailsProps {
     mediaType: "movie" | "tv"
 }
 
+function slugify(text: string): string {
+    return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/--+/g, "-")
+        .trim()
+}
+
 export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
     const [trailerOpen, setTrailerOpen] = React.useState(false)
     const [isInWatchlist, setIsInWatchlist] = React.useState(false)
 
     const isTV = mediaType === "tv"
     const isMovie = mediaType === "movie"
+    const slug = slugify(data.title)
+    const watchUrl = isTV
+        ? `/film/tv/${data.id}/${slug}/watch?season=1&episode=1`
+        : `/film/movie/${data.id}/${slug}/watch`
 
     const handlePlayTrailer = () => {
         setTrailerOpen(true)
@@ -41,10 +55,6 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
 
     const handleDownload = () => {
         console.log("Download clicked")
-    }
-
-    const handlePlayMovie = () => {
-        console.log("Play movie clicked")
     }
 
     return (
@@ -70,7 +80,7 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
 
             {isMovie && (
                 <div className="container mx-auto px-4 -mt-8 relative z-20">
-                    <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-primary/30">
+                    <div className="bg-linear-to-r from-primary/20 via-primary/10 to-primary/20 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-primary/30">
                         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                             <div className="text-center md:text-left">
                                 <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
@@ -82,13 +92,15 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
                             </div>
                             <Button
                                 size="lg"
-                                onClick={handlePlayMovie}
+                                asChild
                                 className="h-16 md:h-18 gap-4 rounded-2xl bg-primary px-10 md:px-14 text-lg md:text-xl font-bold text-primary-foreground shadow-xl shadow-primary/40 transition-all hover:scale-105 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/50 group"
                             >
-                                <div className="size-12 md:size-14 rounded-full bg-primary-foreground/20 flex items-center justify-center group-hover:bg-primary-foreground/30 transition-colors">
-                                    <Play className="size-6 md:size-8 fill-current ml-1" />
-                                </div>
-                                Play Movie
+                                <Link href={watchUrl}>
+                                    <div className="size-12 md:size-14 rounded-full bg-primary-foreground/20 flex items-center justify-center group-hover:bg-primary-foreground/30 transition-colors">
+                                        <Play className="size-6 md:size-8 fill-current ml-1" />
+                                    </div>
+                                    Play Movie
+                                </Link>
                             </Button>
                         </div>
                     </div>
@@ -100,6 +112,7 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
                     <SeasonsEpisodes
                         seasons={data.seasons}
                         showId={data.id}
+                        showTitle={data.title}
                     />
                 )}
 
@@ -143,7 +156,7 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
 
             {data.video_key && (
                 <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
-                    <DialogContent className="max-w-5xl p-0 bg-black border-0 overflow-hidden" showCloseButton={false}>
+                    <DialogContent className="max-w-7xl w-[95vw] p-0 bg-black border-0 overflow-hidden" showCloseButton={false}>
                         <DialogTitle className="sr-only">{data.title} - Trailer</DialogTitle>
                         <div className="relative aspect-video">
                             <iframe

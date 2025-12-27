@@ -219,7 +219,7 @@ export function MediaSection({ videos, backdrops, posters }: MediaSectionProps) 
       </Tabs>
 
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
-        <DialogContent className="max-w-5xl p-0 bg-black border-0 overflow-hidden" showCloseButton={false}>
+        <DialogContent className="max-w-7xl w-[95vw] p-0 bg-black border-0 overflow-hidden" showCloseButton={false}>
           <DialogTitle className="sr-only">{selectedVideo?.name || "Video"}</DialogTitle>
           <div className="relative aspect-video">
             {selectedVideo && (
