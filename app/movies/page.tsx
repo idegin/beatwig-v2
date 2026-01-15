@@ -1,7 +1,7 @@
 import { loadMovies, getMovieGenres } from "@/lib/tmdb"
 import { HomeHero } from "@/components/home/home-hero"
 import { PageSection } from "@/components/page-section"
-import { FilmRow } from "@/components/film-row"
+import { FilmGridSection } from "@/components/film-grid-section"
 import { GenreRow } from "@/components/home/genre-row"
 
 export default async function MoviesPage() {
@@ -14,7 +14,7 @@ export default async function MoviesPage() {
     <div className="min-h-screen">
       {heroData && <HomeHero data={heroData} />}
 
-      <div className="container mx-auto px-4 py-8 md:py-12 space-y-8 md:space-y-12">
+      <div className="container mx-auto px-4 py-8 md:py-12 space-y-10 md:space-y-16">
         {genreSections.map((section) => (
           <PageSection
             key={section.genreId}
@@ -25,7 +25,7 @@ export default async function MoviesPage() {
               text: "View All",
             }}
           >
-            <FilmRow films={section.films} />
+            <FilmGridSection films={section.films} maxItems={12} />
           </PageSection>
         ))}
 

@@ -3,6 +3,7 @@ import { Poppins, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppSettingsProvider } from "@/context/app-settings-context";
+import { AuthProvider } from "@/context/auth-context";
 import { Header } from "@/components/header";
 
 const poppins = Poppins({
@@ -72,10 +73,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppSettingsProvider>
-            <Header />
-            {children}
-          </AppSettingsProvider>
+          <AuthProvider>
+            <AppSettingsProvider>
+              <Header />
+              {children}
+            </AppSettingsProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

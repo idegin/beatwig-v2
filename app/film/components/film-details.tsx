@@ -9,7 +9,7 @@ import { FilmReviews } from "@/app/film/components/film-reviews"
 import { MediaSection } from "@/app/film/components/media-section"
 import { SeasonsEpisodes } from "@/app/film/components/seasons-episodes"
 import { KeywordsSection } from "@/app/film/components/keywords-section"
-import { FilmRow } from "@/components/film-row"
+import { FilmGridSection } from "@/components/film-grid-section"
 import { PageSection } from "@/components/page-section"
 import {
     Dialog,
@@ -19,6 +19,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { X, Play } from "lucide-react"
 import { FilmDetailsData } from "@/types/tmdb.types"
+import { useAuth } from "@/context/auth-context"
+import { AuthPopup } from "@/components/auth-popup"
 
 interface FilmDetailsProps {
     data: FilmDetailsData
@@ -35,8 +37,11 @@ function slugify(text: string): string {
 }
 
 export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
+    const { authState } = useAuth()
     const [trailerOpen, setTrailerOpen] = React.useState(false)
     const [isInWatchlist, setIsInWatchlist] = React.useState(false)
+    const [authPopupOpen, setAuthPopupOpen] = React.useState(false)
+    const [authFeature, setAuthFeature] = React.useState<"watchlist" | "download">("watchlist")
 
     const isTV = mediaType === "tv"
     const isMovie = mediaType === "movie"
@@ -50,10 +55,20 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
     }
 
     const handleAddToWatchlist = () => {
+        if (!authState.user) {
+            setAuthFeature("watchlist")
+            setAuthPopupOpen(true)
+            return
+        }
         setIsInWatchlist(!isInWatchlist)
     }
 
     const handleDownload = () => {
+        if (!authState.user) {
+            setAuthFeature("download")
+            setAuthPopupOpen(true)
+            return
+        }
         console.log("Download clicked")
     }
 
@@ -147,16 +162,18 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
                 </div>
             </div>
 
-            <PageSection
-                heading={isTV ? "More Like This" : "Similar Movies"}
-                subHeading="Based on your interest"
-            >
-                <FilmRow films={data.similar} />
-            </PageSection>
+            <div className="container mx-auto px-4 pb-8">
+                <PageSection
+                    heading={isTV ? "More Like This" : "Similar Movies"}
+                    subHeading="Based on your interest"
+                >
+                    <FilmGridSection films={data.similar} maxItems={12} />
+                </PageSection>
+            </div>
 
             {data.video_key && (
                 <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
-                    <DialogContent className="max-w-7xl w-[95vw] p-0 bg-black border-0 overflow-hidden" showCloseButton={false}>
+                    <DialogContent className="w-[90vw] max-w-[90vw] p-0 bg-black border-0 overflow-hidden" showCloseButton={false}>
                         <DialogTitle className="sr-only">{data.title} - Trailer</DialogTitle>
                         <div className="relative aspect-video">
                             <iframe
@@ -177,6 +194,12 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
                     </DialogContent>
                 </Dialog>
             )}
+
+            <AuthPopup
+                open={authPopupOpen}
+                onOpenChange={setAuthPopupOpen}
+                feature={authFeature}
+            />
         </div>
     )
 }

@@ -19,6 +19,8 @@ import {
   User,
   Settings,
   Heart,
+  LogIn,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,9 +42,11 @@ import {
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { appData } from "@/app/constants"
+import { useAuth } from "@/context/auth-context"
+import { AuthPopup } from "@/components/auth-popup"
 
 const navLinks = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/", authHref: "/for-you", label: "Home", icon: Home },
   { href: "/watchlist", label: "Watch List", icon: List },
   { href: "/movies", label: "Movies", icon: Film },
   { href: "/tv-shows", label: "TV Shows", icon: Tv },
@@ -51,9 +55,14 @@ const navLinks = [
 export function Header() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const { authState, signOut, signInWithGoogle } = useAuth()
   const [isScrolled, setIsScrolled] = React.useState(false)
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [authPopupOpen, setAuthPopupOpen] = React.useState(false)
+
+  const user = authState.user
+  const isLoading = authState.loading
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -75,6 +84,22 @@ export function Header() {
       handleSearch(e)
     }
   }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch {
+    }
+  }
+
+  const userInitials = user?.displayName
+    ? user.displayName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "?"
 
   return (
     <header
@@ -102,16 +127,19 @@ export function Header() {
             </Link>
 
             <nav className="hidden lg:flex items-center gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="group flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
-                >
-                  <link.icon className="size-4 group-hover:text-primary transition-colors" />
-                  <span>{link.label}</span>
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const linkHref = user && link.authHref ? link.authHref : link.href
+                return (
+                  <Link
+                    key={link.href}
+                    href={linkHref}
+                    className="group flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+                  >
+                    <link.icon className="size-4 group-hover:text-primary transition-colors" />
+                    <span>{link.label}</span>
+                  </Link>
+                )
+              })}
             </nav>
           </div>
 
@@ -150,54 +178,78 @@ export function Header() {
               <span className="sr-only">Toggle theme</span>
             </Button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full ring-2 ring-primary/20 hover:ring-primary/50 transition-all"
-                >
-                  <Avatar className="size-8">
-                    <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face" />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      JD
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">John Doe</p>
-                    <p className="text-xs text-muted-foreground">
-                      john@example.com
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="size-4" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Heart className="size-4" />
-                  My Favorites
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <List className="size-4" />
-                  Watch List
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="size-4" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive focus:text-destructive">
-                  <LogOut className="size-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {isLoading ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                disabled
+              >
+                <Loader2 className="size-5 animate-spin" />
+              </Button>
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full ring-2 ring-primary/20 hover:ring-primary/50 transition-all"
+                  >
+                    <Avatar className="size-8">
+                      <AvatarImage src={user.photoURL || undefined} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{user.displayName || "User"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="size-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Heart className="size-4" />
+                    My Favorites
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/watchlist">
+                      <List className="size-4" />
+                      Watch List
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="size-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="text-destructive focus:text-destructive"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="size-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                onClick={() => setAuthPopupOpen(true)}
+                className="gap-2 rounded-full px-5"
+              >
+                <LogIn className="size-4" />
+                <span className="hidden sm:inline">Sign In</span>
+              </Button>
+            )}
 
             <Sheet>
               <SheetTrigger asChild>
@@ -237,44 +289,57 @@ export function Header() {
                     />
                   </form>
                   <nav className="flex flex-col gap-1">
-                    {navLinks.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
-                      >
-                        <link.icon className="size-5 text-primary" />
-                        <span>{link.label}</span>
-                      </Link>
-                    ))}
+                    {navLinks.map((link) => {
+                      const linkHref = user && link.authHref ? link.authHref : link.href
+                      return (
+                        <Link
+                          key={link.href}
+                          href={linkHref}
+                          className="flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+                        >
+                          <link.icon className="size-5 text-primary" />
+                          <span>{link.label}</span>
+                        </Link>
+                      )
+                    })}
                   </nav>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border/50">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
-                    <Avatar className="size-10">
-                      <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face" />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        JD
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">John Doe</p>
-                      <p className="text-xs text-muted-foreground">
-                        john@example.com
-                      </p>
+                  {user ? (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
+                      <Avatar className="size-10">
+                        <AvatarImage src={user.photoURL || undefined} />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{user.displayName || "User"}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full shrink-0"
+                        onClick={() =>
+                          setTheme(theme === "dark" ? "light" : "dark")
+                        }
+                      >
+                        <Sun className="size-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+                        <Moon className="absolute size-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+                      </Button>
                     </div>
+                  ) : (
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full"
-                      onClick={() =>
-                        setTheme(theme === "dark" ? "light" : "dark")
-                      }
+                      onClick={() => setAuthPopupOpen(true)}
+                      className="w-full gap-2 h-12 rounded-xl"
                     >
-                      <Sun className="size-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-                      <Moon className="absolute size-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+                      <LogIn className="size-4" />
+                      Sign In with Google
                     </Button>
-                  </div>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -298,6 +363,8 @@ export function Header() {
           </div>
         )}
       </div>
+
+      <AuthPopup open={authPopupOpen} onOpenChange={setAuthPopupOpen} />
     </header>
   )
 }

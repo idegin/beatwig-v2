@@ -222,6 +222,67 @@ export async function getHomePageData() {
     }
 }
 
+export async function getForYouPageData() {
+    try {
+        const [
+            trendingData,
+            genresData,
+        ] = await Promise.all([
+            getTrendingAll("week"),
+            getMovieGenres(),
+        ])
+
+        const randomIndex = Math.floor(Math.random() * Math.min(5, trendingData.results.length))
+        const heroFilm = trendingData.results[randomIndex]
+        let videoKey: string | undefined
+
+        if (heroFilm) {
+            const mediaType = heroFilm.media_type || (heroFilm.title ? "movie" : "tv")
+            videoKey = await getTrailerKey(mediaType, heroFilm.id)
+        }
+
+        const heroData: HeroData | null = heroFilm
+            ? {
+                id: heroFilm.id,
+                title: heroFilm.title || heroFilm.name || "",
+                overview: heroFilm.overview,
+                backdrop_path: heroFilm.backdrop_path || "",
+                poster_path: heroFilm.poster_path || "",
+                release_date: heroFilm.release_date || heroFilm.first_air_date || "",
+                vote_average: heroFilm.vote_average,
+                genres: [],
+                runtime: undefined,
+                certification: undefined,
+                media_type: (heroFilm.media_type as "movie" | "tv") || "movie",
+                video_key: videoKey,
+            }
+            : null
+
+        const genres = genresData.genres.slice(0, 16)
+
+        const becauseYouWatched = {
+            title: trendingData.results[1]?.title || trendingData.results[1]?.name || "Trending",
+            films: trendingData.results.slice(2, 8).map((f) => ({
+                ...f,
+                media_type: (f.media_type as "movie" | "tv") || "movie",
+            })),
+        }
+
+        return {
+            heroData,
+            genres,
+            becauseYouWatched,
+        }
+    } catch (error) {
+        console.error("Error fetching For You page data:", error)
+        return {
+            heroData: null,
+            genres: [],
+            becauseYouWatched: { title: "", films: [] },
+        }
+    }
+}
+
 export async function getFilmDetails(id: number, mediaType: "movie" | "tv"): Promise<FilmDetailsData> {
     const endpoint = mediaType === "movie" ? `/movie/${id}` : `/tv/${id}`
     const data = await fetchTMDB<Record<string, unknown>>(endpoint, {
