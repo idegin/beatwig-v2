@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AppSettingsProvider } from "@/context/app-settings-context";
 import { AuthProvider } from "@/context/auth-context";
 import { Header } from "@/components/header";
+import { getAuthToken } from "@/lib/auth-cookies";
+import { verifyAuthToken } from "@/lib/server-auth";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -49,11 +51,27 @@ export const viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let serverUser = null;
+  
+  try {
+    console.log("[RootLayout] Checking auth token...");
+    const token = await getAuthToken();
+    console.log("[RootLayout] Token:", token ? "present" : "missing");
+    
+    if (token) {
+      console.log("[RootLayout] Verifying auth token...");
+      serverUser = await verifyAuthToken(token);
+      console.log("[RootLayout] Server user:", serverUser ? serverUser.uid : "null");
+    }
+  } catch (error) {
+    console.error("[RootLayout] Error fetching user:", error);
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -73,7 +91,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
+          <AuthProvider initialServerUser={serverUser}>
             <AppSettingsProvider>
               <Header />
               {children}

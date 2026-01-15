@@ -22,6 +22,7 @@ interface FilmHeroProps {
   onAddToWatchlist: () => void
   onDownload: () => void
   isInWatchlist?: boolean
+  isWatchlistLoading?: boolean
 }
 
 export function FilmHero({
@@ -41,6 +42,7 @@ export function FilmHero({
   onAddToWatchlist,
   onDownload,
   isInWatchlist = false,
+  isWatchlistLoading = false,
 }: FilmHeroProps) {
   const { settings, updateSettings } = useAppSettings()
 
@@ -159,14 +161,15 @@ export function FilmHero({
                   size="lg"
                   variant="outline"
                   onClick={onAddToWatchlist}
-                  className="h-14 gap-3 rounded-full border-2 border-foreground/20 bg-foreground/10 px-8 text-base font-semibold text-foreground backdrop-blur-sm transition-all hover:scale-105 hover:border-foreground/40 hover:bg-foreground/20"
+                  className="h-14 gap-3 rounded-full border-2 border-foreground/20 bg-foreground/10 px-8 text-base font-semibold text-foreground backdrop-blur-sm transition-all hover:scale-105 hover:border-foreground/40 hover:bg-foreground/20 cursor-pointer"
+                  disabled={isWatchlistLoading}
                 >
                   {isInWatchlist ? (
-                    <Check className="size-5" />
+                    <Check className="size-5 pointer-events-none" />
                   ) : (
-                    <Plus className="size-5" />
+                    <Plus className="size-5 pointer-events-none" />
                   )}
-                  {isInWatchlist ? "In Watchlist" : "Watchlist"}
+                  <span className="pointer-events-none">{isInWatchlist ? "In Watchlist" : "Watchlist"}</span>
                 </Button>
 
                 <Button

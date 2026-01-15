@@ -2,6 +2,8 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import FilmDetails from "@/app/film/components/film-details"
 import { getFilmDetails } from "@/lib/tmdb"
+import { getAuthToken } from "@/lib/auth-cookies"
+import { verifyAuthToken, isFilmBookmarked } from "@/lib/server-auth"
 
 interface FilmDetailsPageProps {
   params: Promise<{
@@ -123,10 +125,20 @@ export default async function FilmDetailsPage({ params }: FilmDetailsPageProps) 
     notFound()
   }
 
+  let initialIsBookmarked = false
+  const token = await getAuthToken()
+  if (token) {
+    const user = await verifyAuthToken(token)
+    if (user) {
+      initialIsBookmarked = await isFilmBookmarked(user.uid, filmId, mediaType)
+    }
+  }
+
   return (
     <FilmDetails
       data={data}
       mediaType={mediaType}
+      initialIsBookmarked={initialIsBookmarked}
     />
   )
 }

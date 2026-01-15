@@ -20,11 +20,13 @@ import { Button } from "@/components/ui/button"
 import { X, Play } from "lucide-react"
 import { FilmDetailsData } from "@/types/tmdb.types"
 import { useAuth } from "@/context/auth-context"
+import { useWatchlist } from "@/hooks/use-watchlist"
 import { AuthPopup } from "@/components/auth-popup"
 
 interface FilmDetailsProps {
     data: FilmDetailsData
     mediaType: "movie" | "tv"
+    initialIsBookmarked?: boolean
 }
 
 function slugify(text: string): string {
@@ -36,12 +38,18 @@ function slugify(text: string): string {
         .trim()
 }
 
-export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
-    const { authState } = useAuth()
+export default function FilmDetails({ data, mediaType, initialIsBookmarked = false }: FilmDetailsProps) {
+    const { authState, isAuthenticated } = useAuth()
+    const { isInWatchlist, isLoading: watchlistLoading, toggleWatchlist, checkBookmark } = useWatchlist(initialIsBookmarked)
     const [trailerOpen, setTrailerOpen] = React.useState(false)
-    const [isInWatchlist, setIsInWatchlist] = React.useState(false)
     const [authPopupOpen, setAuthPopupOpen] = React.useState(false)
     const [authFeature, setAuthFeature] = React.useState<"watchlist" | "download">("watchlist")
+
+    React.useEffect(() => {
+        if (isAuthenticated && !initialIsBookmarked) {
+            checkBookmark(data.id, mediaType)
+        }
+    }, [isAuthenticated, data.id, mediaType, checkBookmark, initialIsBookmarked])
 
     const isTV = mediaType === "tv"
     const isMovie = mediaType === "movie"
@@ -54,17 +62,27 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
         setTrailerOpen(true)
     }
 
-    const handleAddToWatchlist = () => {
-        if (!authState.user) {
+    const handleAddToWatchlist = async () => {
+        if (!isAuthenticated) {
             setAuthFeature("watchlist")
             setAuthPopupOpen(true)
             return
         }
-        setIsInWatchlist(!isInWatchlist)
+        
+        await toggleWatchlist({
+            filmId: data.id,
+            mediaType,
+            title: data.title,
+            posterPath: data.poster_path,
+            backdropPath: data.backdrop_path,
+            voteAverage: data.vote_average,
+            releaseDate: data.release_date,
+            overview: data.overview,
+        })
     }
 
     const handleDownload = () => {
-        if (!authState.user) {
+        if (!isAuthenticated) {
             setAuthFeature("download")
             setAuthPopupOpen(true)
             return
@@ -91,6 +109,7 @@ export default function FilmDetails({ data, mediaType }: FilmDetailsProps) {
                 onAddToWatchlist={handleAddToWatchlist}
                 onDownload={handleDownload}
                 isInWatchlist={isInWatchlist}
+                isWatchlistLoading={watchlistLoading}
             />
 
             {isMovie && (

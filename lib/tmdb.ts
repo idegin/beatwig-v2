@@ -27,23 +27,45 @@ function buildUrl(endpoint: string, params: Record<string, string | number | boo
 
 async function fetchTMDB<T>(endpoint: string, params: Record<string, string | number | boolean> = {}): Promise<T> {
     if (!TMDB_ACCESS_TOKEN) {
+        console.error("[TMDB] API token not configured")
         throw new Error("TMDB API token not configured")
     }
     
     const url = buildUrl(endpoint, params)
-    const response = await fetch(url, {
-        next: { revalidate: 3600 },
-        headers: {
-            Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-        },
-    })
+    
+    try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+        
+        console.log(`[TMDB] Fetching: ${endpoint}`)
+        const response = await fetch(url, {
+            next: { revalidate: 3600 },
+            headers: {
+                Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+            signal: controller.signal,
+        })
+        
+        clearTimeout(timeoutId)
 
-    if (!response.ok) {
-        throw new Error(`TMDB API Error: ${response.status}`)
+        if (!response.ok) {
+            console.error(`[TMDB] API Error: ${response.status} for ${endpoint}`)
+            throw new Error(`TMDB API Error: ${response.status}`)
+        }
+
+        console.log(`[TMDB] Success: ${endpoint}`)
+        return response.json()
+    } catch (error) {
+        if (error instanceof Error) {
+            if (error.name === 'AbortError') {
+                console.error(`[TMDB] Request timeout for ${endpoint}`)
+                throw new Error(`TMDB API timeout: ${endpoint}`)
+            }
+            console.error(`[TMDB] Error fetching ${endpoint}:`, error.message)
+        }
+        throw error
     }
-
-    return response.json()
 }
 
 export async function getNowPlayingMovies(page = 1): Promise<{ results: Film[]; total_pages: number }> {
