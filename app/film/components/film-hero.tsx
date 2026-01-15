@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Play, Plus, Volume2, VolumeX, Video, VideoOff, Star, Download, Check } from "lucide-react"
+import { Play, Plus, Volume2, VolumeX, Video, VideoOff, Star, Download, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppSettings } from "@/context/app-settings-context"
 
@@ -90,7 +90,7 @@ export function FilmHero({
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
       </div>
 
-      <div className="relative z-10 flex min-h-[90vh] flex-col justify-end pb-16 md:pb-24 pt-24">
+      <div className="relative z-40 flex min-h-[90vh] flex-col justify-end pb-16 md:pb-24 pt-24">
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-end lg:items-end">
             <div className="hidden lg:block shrink-0">
@@ -164,12 +164,16 @@ export function FilmHero({
                   className="h-14 gap-3 rounded-full border-2 border-foreground/20 bg-foreground/10 px-8 text-base font-semibold text-foreground backdrop-blur-sm transition-all hover:scale-105 hover:border-foreground/40 hover:bg-foreground/20 cursor-pointer"
                   disabled={isWatchlistLoading}
                 >
-                  {isInWatchlist ? (
+                  {isWatchlistLoading ? (
+                    <Loader2 className="size-5 pointer-events-none animate-spin" />
+                  ) : isInWatchlist ? (
                     <Check className="size-5 pointer-events-none" />
                   ) : (
                     <Plus className="size-5 pointer-events-none" />
                   )}
-                  <span className="pointer-events-none">{isInWatchlist ? "In Watchlist" : "Watchlist"}</span>
+                  <span className="pointer-events-none">
+                    {isWatchlistLoading ? "Loading..." : isInWatchlist ? "In Watchlist" : "Watchlist"}
+                  </span>
                 </Button>
 
                 <Button
@@ -187,7 +191,7 @@ export function FilmHero({
         </div>
       </div>
 
-      <div className="absolute bottom-16 right-4 z-20 flex items-center gap-3 md:bottom-24 md:right-8">
+      <div className="absolute bottom-16 right-4 z-40 flex items-center gap-3 md:bottom-24 md:right-8">
         <Button
           variant="ghost"
           size="icon"

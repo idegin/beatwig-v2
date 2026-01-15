@@ -21,6 +21,7 @@ import {
   Heart,
   LogIn,
   Loader2,
+  Clock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -217,10 +218,6 @@ export function Header() {
                     <User className="size-4" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Heart className="size-4" />
-                    My Favorites
-                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/watchlist">
                       <List className="size-4" />
@@ -228,8 +225,8 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Settings className="size-4" />
-                    Settings
+                    <Clock className="size-4" />
+                    Watch History
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 

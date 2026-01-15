@@ -52,7 +52,7 @@ export async function getUserBookmarks(userId: string): Promise<FilmBookmark[]> 
     console.log("[getUserBookmarks] Fetching bookmarks for user:", userId)
     
     const bookmarksQuery = adminDb
-      .collection(FIREBASE_COLLECTIONS.FILM_BOOKMARKS)
+      .collection(FIREBASE_COLLECTIONS.WATCHLIST)
       .where("userId", "==", userId)
     
     const snapshot = await bookmarksQuery.get()
@@ -97,7 +97,7 @@ export async function isFilmBookmarked(
     const bookmarkId = `${userId}_${mediaType}_${filmId}`
     console.log("[isFilmBookmarked] Checking bookmark:", bookmarkId)
     const bookmarkRef = adminDb
-      .collection(FIREBASE_COLLECTIONS.FILM_BOOKMARKS)
+      .collection(FIREBASE_COLLECTIONS.WATCHLIST)
       .doc(bookmarkId)
     
     const bookmarkSnap = await bookmarkRef.get()

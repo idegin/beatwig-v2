@@ -7,8 +7,8 @@ export const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
 export const FIREBASE_COLLECTIONS = {
     USERS: "users",
-    FILM_BOOKMARKS: "film_bookmarks",
-    MESSAGES: "messages",
+    // FILM_BOOKMARKS: "film_bookmarks",
+    // MESSAGES: "messages",
     WATCH_HISTORY: "watch_history",
     WATCHLIST: "watchlist",
 } as const

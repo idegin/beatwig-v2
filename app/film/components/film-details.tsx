@@ -192,9 +192,9 @@ export default function FilmDetails({ data, mediaType, initialIsBookmarked = fal
 
             {data.video_key && (
                 <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
-                    <DialogContent className="w-[90vw] max-w-[90vw] p-0 bg-black border-0 overflow-hidden" showCloseButton={false}>
+                    <DialogContent className="md:min-w-[95vw] sm:w-[90vw] max-w-[90vw] p-0 bg-black border-0 overflow-hidden" showCloseButton={false}>
                         <DialogTitle className="sr-only">{data.title} - Trailer</DialogTitle>
-                        <div className="relative aspect-video">
+                        <div className="relative aspect-video w-full">
                             <iframe
                                 src={`https://www.youtube.com/embed/${data.video_key}?autoplay=1`}
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

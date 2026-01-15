@@ -161,7 +161,7 @@ export function AuthProvider({ children, initialServerUser }: AuthProviderProps)
                 body: JSON.stringify({ token }),
             })
 
-            router.push("/for-you")
+            console.log("[Auth] User signed in successfully")
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to sign in"
             setAuthState((prev) => ({
@@ -171,7 +171,7 @@ export function AuthProvider({ children, initialServerUser }: AuthProviderProps)
             }))
             throw error
         }
-    }, [router])
+    }, [])
 
     const signOut = React.useCallback(async () => {
         if (!isFirebaseConfigured || !auth) {
