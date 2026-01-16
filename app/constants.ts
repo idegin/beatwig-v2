@@ -24,7 +24,7 @@ export const ALGORITHM_UPDATE_INTERVAL_SECONDS =
     process.env.NODE_ENV === "development" ? 60 : 600
 
 export const MAX_ALGORITHM_ITEMS = 10
-export const MAX_ALGORITHM_GENRES = 15
+export const MAX_ALGORITHM_GENRES = 10
 export const MAX_ALGORITHM_TAGS = 20
 
 export const TV_EPISODE_RANK_MULTIPLIER = 0.15

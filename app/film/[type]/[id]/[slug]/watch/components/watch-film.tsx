@@ -104,27 +104,30 @@ export function WatchFilm({
   const currentEpisodeData = episodes.find((ep) => ep.episode_number === currentEpisode)
 
   const watchHistoryData = React.useMemo(
-    () => ({
-      filmId,
-      mediaType,
-      title: data.title,
-      posterPath: data.poster_path,
-      backdropPath: data.backdrop_path,
-      voteAverage: data.vote_average,
-      releaseDate: data.release_date || "",
-      runtime: isTV ? (currentEpisodeData?.runtime ?? 45) : (data.runtime ?? null),
-      originalLanguage: data.original_language,
-      country: data.production_countries?.[0]?.iso_3166_1 || "",
-      tags: data.keywords?.map((k) => k.name) || [],
-      genres: data.genreObjects || [],
-      genreIds: data.genreObjects?.map((g) => g.id) || [],
-      popularity: data.popularity || 0,
-      ...(isTV && {
-        season: currentSeason,
-        episode: currentEpisode,
-        episodeTitle: currentEpisodeData?.name,
-      }),
-    }),
+    () => {
+      const tags = data.keywords?.map((k) => k.name) || []
+      return {
+        filmId,
+        mediaType,
+        title: data.title,
+        posterPath: data.poster_path,
+        backdropPath: data.backdrop_path,
+        voteAverage: data.vote_average,
+        releaseDate: data.release_date || "",
+        runtime: isTV ? (currentEpisodeData?.runtime ?? 45) : (data.runtime ?? null),
+        originalLanguage: data.original_language,
+        country: data.production_countries?.[0]?.iso_3166_1 || "",
+        tags,
+        genres: data.genreObjects || [],
+        genreIds: data.genreObjects?.map((g) => g.id) || [],
+        popularity: data.popularity || 0,
+        ...(isTV && {
+          season: currentSeason,
+          episode: currentEpisode,
+          episodeTitle: currentEpisodeData?.name,
+        }),
+      }
+    },
     [filmId, mediaType, data, isTV, currentSeason, currentEpisode, currentEpisodeData]
   )
 

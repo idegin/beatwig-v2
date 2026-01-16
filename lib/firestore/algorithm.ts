@@ -11,14 +11,7 @@ import {
   MAX_ALGORITHM_ITEMS,
   MAX_ALGORITHM_GENRES,
   MAX_ALGORITHM_TAGS,
-  TV_EPISODE_RANK_MULTIPLIER,
-  TV_BASE_RANK_CAP,
-  MOVIE_BASE_RANK,
   ALGORITHM_RECENCY_DECAY_DAYS,
-  ALGORITHM_RECENCY_WEIGHT,
-  ALGORITHM_RANK_WEIGHT,
-  TAG_FREQUENCY_BOOST,
-  TAG_RECENCY_WEIGHT,
 } from "@/app/constants"
 import { AlgorithmItem, AlgorithmGenre, AlgorithmTag, UserAlgorithm } from "@/types/firebase.types"
 
@@ -51,58 +44,6 @@ function calculateRecencyScore(lastInteractedAt: Date): number {
   if (daysSinceInteraction >= ALGORITHM_RECENCY_DECAY_DAYS) return 0.1
   
   return Math.max(0.1, 1 - (daysSinceInteraction / ALGORITHM_RECENCY_DECAY_DAYS) * 0.9)
-}
-
-function calculateEffectiveRank(item: AlgorithmItem): number {
-  const recencyScore = calculateRecencyScore(item.lastInteractedAt)
-  
-  const normalizedRank = Math.min(item.rank, 20) / 20
-  
-  const watchScore = item.watchDurationPercent > 0 
-    ? item.watchDurationPercent / 100 
-    : 0.5
-  
-  const effectiveRank = 
-    (normalizedRank * ALGORITHM_RANK_WEIGHT) +
-    (recencyScore * ALGORITHM_RECENCY_WEIGHT) +
-    (watchScore * (1 - ALGORITHM_RANK_WEIGHT - ALGORITHM_RECENCY_WEIGHT))
-  
-  return effectiveRank * 100
-}
-
-function calculateRankIncrement(
-  mediaType: "movie" | "tv", 
-  currentInteractionCount: number,
-  watchDurationPercent: number = 50
-): number {
-  const completionBonus = watchDurationPercent > 80 ? 0.5 : 
-                          watchDurationPercent > 50 ? 0.25 : 0
-  
-  if (mediaType === "movie") {
-    return MOVIE_BASE_RANK + completionBonus
-  }
-  
-  const episodeIncrement = Math.max(0.1, TV_EPISODE_RANK_MULTIPLIER * (1 / Math.log2(currentInteractionCount + 2)))
-  const cappedRank = Math.min(TV_BASE_RANK_CAP, episodeIncrement + completionBonus)
-  
-  return cappedRank
-}
-
-function calculateTagRank(
-  existingRank: number,
-  existingLastInteractedAt: Date,
-  newFrequency: number
-): number {
-  const recencyScore = calculateRecencyScore(existingLastInteractedAt)
-  
-  const frequencyBoost = Math.min(1, newFrequency * TAG_FREQUENCY_BOOST)
-  
-  const newRank = existingRank + 
-    (1 * (1 - TAG_RECENCY_WEIGHT)) + 
-    (recencyScore * TAG_RECENCY_WEIGHT) + 
-    frequencyBoost
-  
-  return newRank
 }
 
 function getTagsFromItem(input: AlgorithmInput): Map<string, number> {
@@ -146,13 +87,16 @@ export async function addOrUpdateAlgorithm(
         lastInteractedAt: (item.lastInteractedAt as Timestamp)?.toDate?.() || new Date(),
       }))
       genres = (data.genres || []).map((g: Record<string, unknown>) => ({
-        ...g,
+        id: (g.id as number) || 0,
+        name: (g.name as string) || "",
+        rank: (g.rank as number) || 1,
         lastInteractedAt: (g.lastInteractedAt as Timestamp)?.toDate?.() || new Date(),
-      }))
+      })).filter((g: AlgorithmGenre) => g.id > 0 && g.name.length > 0)
       tags = (data.tags || []).map((t: Record<string, unknown>) => ({
-        ...t,
+        name: (t.name as string) || "",
+        rank: (t.rank as number) || 1,
         lastInteractedAt: (t.lastInteractedAt as Timestamp)?.toDate?.() || new Date(),
-      }))
+      })).filter((t: AlgorithmTag) => t.name.length > 0)
     }
 
     const existingIndex = items.findIndex(
@@ -160,23 +104,25 @@ export async function addOrUpdateAlgorithm(
     )
 
     const watchDuration = input.watchDurationPercent ?? 50
+    const maxRank = MAX_ALGORITHM_ITEMS
 
     if (existingIndex !== -1) {
       const existingItem = items[existingIndex]
       const newInteractionCount = existingItem.interactionCount + 1
-      const rankIncrement = calculateRankIncrement(
-        input.mediaType, 
-        newInteractionCount,
-        watchDuration
-      )
       
       const avgWatchDuration = (
         (existingItem.watchDurationPercent * existingItem.interactionCount) + watchDuration
       ) / newInteractionCount
 
+      items.forEach((item, idx) => {
+        if (idx !== existingIndex && item.rank > 0) {
+          item.rank = Math.max(1, item.rank - 1)
+        }
+      })
+
       items[existingIndex] = {
         ...existingItem,
-        rank: existingItem.rank + rankIncrement,
+        rank: maxRank,
         interactionCount: newInteractionCount,
         watchDurationPercent: avgWatchDuration,
         lastWatchedAt: new Date(),
@@ -186,7 +132,12 @@ export async function addOrUpdateAlgorithm(
         tags: [...new Set([...existingItem.tags, ...input.tags])].slice(0, 10),
       }
     } else {
-      const rankIncrement = calculateRankIncrement(input.mediaType, 1, watchDuration)
+      items.forEach((item) => {
+        if (item.rank > 0) {
+          item.rank = Math.max(1, item.rank - 1)
+        }
+      })
+
       const newItem: AlgorithmItem = {
         id: input.id,
         mediaType: input.mediaType,
@@ -197,7 +148,7 @@ export async function addOrUpdateAlgorithm(
         tags: input.tags.slice(0, 10),
         genreIds: input.genreIds,
         genres: input.genres,
-        rank: rankIncrement,
+        rank: maxRank,
         interactionCount: 1,
         watchDurationPercent: watchDuration,
         voteAverage: input.voteAverage,
@@ -210,33 +161,42 @@ export async function addOrUpdateAlgorithm(
       items.unshift(newItem)
     }
 
-    items.sort((a, b) => calculateEffectiveRank(b) - calculateEffectiveRank(a))
+    items.sort((a, b) => {
+      if (b.rank !== a.rank) return b.rank - a.rank
+      return b.lastInteractedAt.getTime() - a.lastInteractedAt.getTime()
+    })
     
     if (items.length > MAX_ALGORITHM_ITEMS) {
       items = items.slice(0, MAX_ALGORITHM_ITEMS)
     }
 
+    const maxGenreRank = MAX_ALGORITHM_GENRES
+    const inputGenreIds = new Set(input.genres.map((g) => g.id))
+
+    genres.forEach((g) => {
+      if (!inputGenreIds.has(g.id) && g.rank > 0) {
+        g.rank = Math.max(1, g.rank - 1)
+      }
+    })
+
     for (const genre of input.genres) {
       const existingGenreIndex = genres.findIndex((g) => g.id === genre.id)
       if (existingGenreIndex !== -1) {
-        const existingGenre = genres[existingGenreIndex]
-        const recencyScore = calculateRecencyScore(existingGenre.lastInteractedAt)
-        genres[existingGenreIndex].rank = existingGenre.rank + (1 * (0.5 + recencyScore * 0.5))
+        genres[existingGenreIndex].rank = maxGenreRank
         genres[existingGenreIndex].lastInteractedAt = new Date()
       } else {
         genres.push({
           id: genre.id,
           name: genre.name,
-          rank: 1,
+          rank: maxGenreRank,
           lastInteractedAt: new Date(),
         })
       }
     }
     
     genres.sort((a, b) => {
-      const aScore = a.rank * calculateRecencyScore(a.lastInteractedAt)
-      const bScore = b.rank * calculateRecencyScore(b.lastInteractedAt)
-      return bScore - aScore
+      if (b.rank !== a.rank) return b.rank - a.rank
+      return b.lastInteractedAt.getTime() - a.lastInteractedAt.getTime()
     })
     
     if (genres.length > MAX_ALGORITHM_GENRES) {
@@ -244,30 +204,37 @@ export async function addOrUpdateAlgorithm(
     }
 
     const inputTagCounts = getTagsFromItem(input)
+    const inputTagNames = new Set(inputTagCounts.keys())
+    const maxTagRank = MAX_ALGORITHM_TAGS
+    
+    tags.forEach((t) => {
+      if (!inputTagNames.has(t.name.toLowerCase()) && t.rank > 0) {
+        t.rank = Math.max(1, t.rank - 1)
+      }
+    })
     
     for (const [tagName, frequency] of inputTagCounts) {
       const existingTagIndex = tags.findIndex((t) => t.name.toLowerCase() === tagName)
+      const frequencyBonus = Math.min(frequency - 1, 3)
       
       if (existingTagIndex !== -1) {
-        const existingTag = tags[existingTagIndex]
         tags[existingTagIndex] = {
-          ...existingTag,
-          rank: calculateTagRank(existingTag.rank, existingTag.lastInteractedAt, frequency),
+          ...tags[existingTagIndex],
+          rank: maxTagRank + frequencyBonus,
           lastInteractedAt: new Date(),
         }
       } else {
         tags.push({
           name: tagName,
-          rank: 1 + (frequency * TAG_FREQUENCY_BOOST),
+          rank: maxTagRank + frequencyBonus,
           lastInteractedAt: new Date(),
         })
       }
     }
     
     tags.sort((a, b) => {
-      const aScore = a.rank * calculateRecencyScore(a.lastInteractedAt)
-      const bScore = b.rank * calculateRecencyScore(b.lastInteractedAt)
-      return bScore - aScore
+      if (b.rank !== a.rank) return b.rank - a.rank
+      return b.lastInteractedAt.getTime() - a.lastInteractedAt.getTime()
     })
     
     if (tags.length > MAX_ALGORITHM_TAGS) {
