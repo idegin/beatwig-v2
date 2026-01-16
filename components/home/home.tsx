@@ -1,79 +1,104 @@
 "use client"
 
 import { PageSection } from "@/components/page-section"
-import { ContinueWatching } from "./continue-watching"
 import { FilmRow } from "@/components/film-row"
 import { GenreRow } from "./genre-row"
+import { ThemeRow } from "./theme-row"
 import { PeopleRow } from "./people-row"
 import { Top10Row } from "./top-10-row"
 import { RecommendationBanner } from "./recommendation-banner"
-import { ContinueWatchingItem } from "@/types/firebase.types"
-import { Film, Genre, HeroData, Person } from "@/types/tmdb.types"
+import { Film, Genre, Person } from "@/types/tmdb.types"
 import { appData } from "@/app/constants"
 
+interface GenreSection {
+    id: number
+    name: string
+    films: Film[]
+}
+
 interface HomeProps {
-    continueWatch: ContinueWatchingItem[]
-    becauseYouWatched: {
-        title: string
-        films: Film[]
-    }
     nowShowingInTheaters: Film[]
     upcomingMovies: Film[]
-    romanceMovies: Film[]
-    actionMovies: Film[]
-    popularOnApp: Film[]
     genres: Genre[]
-    heroData: HeroData
     popularPeople?: Person[]
     showRecommendationBanner?: boolean
+    popularOnBeatWig?: Film[]
+    hotThemes?: { name: string; userCount: number }[]
+    communityFavorites?: Film[]
+    whatPeopleWatching?: Film[]
+    top10OnApp?: Film[]
+    randomGenreSections?: GenreSection[]
 }
 
 export default function Home({
-    continueWatch,
-    becauseYouWatched,
     nowShowingInTheaters,
     upcomingMovies,
-    romanceMovies,
-    actionMovies,
-    popularOnApp,
     genres,
     popularPeople,
     showRecommendationBanner = false,
+    popularOnBeatWig = [],
+    hotThemes = [],
+    communityFavorites = [],
+    whatPeopleWatching = [],
+    top10OnApp = [],
+    randomGenreSections = [],
 }: HomeProps) {
     return (
         <div className="space-y-2 md:space-y-4">
             {showRecommendationBanner && <RecommendationBanner />}
-            
-            <PageSection
-                heading="Continue Watching"
-                subHeading="Pick up where you left off"
-                altLink={{ route: "/history", text: "View History" }}
-            >
-                <ContinueWatching items={continueWatch} />
-            </PageSection>
 
-            <PageSection
-                heading={`Because You Watched "${becauseYouWatched.title}"`}
-                subHeading="Personalized recommendations for you"
-            >
-                <FilmRow films={becauseYouWatched.films} />
-            </PageSection>
+            {whatPeopleWatching.length > 0 && (
+                <PageSection
+                    heading="What People Are Watching"
+                    subHeading="Trending on BeatWig right now"
+                >
+                    <FilmRow films={whatPeopleWatching} variant="wide" />
+                </PageSection>
+            )}
 
             <PageSection
                 heading="Now Showing in Theaters"
                 subHeading="Catch the latest blockbusters"
-                altLink={{ route: "/movies/now-playing", text: "View All" }}
+                altLink={{ route: "/movies", text: "View All" }}
             >
                 <FilmRow films={nowShowingInTheaters} variant="wide" />
             </PageSection>
 
+            {popularOnBeatWig.length > 0 && (
+                <PageSection
+                    heading={`Popular on ${appData.name}`}
+                    subHeading="Most watched by our community"
+                >
+                    <FilmRow films={popularOnBeatWig} />
+                </PageSection>
+            )}
+
             <PageSection
                 heading="Upcoming Movies"
                 subHeading="Coming soon to theaters"
-                altLink={{ route: "/movies/upcoming", text: "View All" }}
+                altLink={{ route: "/movies", text: "View All" }}
             >
                 <FilmRow films={upcomingMovies} />
             </PageSection>
+
+            {hotThemes.length > 0 && (
+                <PageSection
+                    heading="Hot Themes This Week"
+                    subHeading="Trending topics our users love"
+                >
+                    <ThemeRow themes={hotThemes} />
+                </PageSection>
+            )}
+
+            {randomGenreSections.length > 0 && randomGenreSections[0] && (
+                <PageSection
+                    heading={`${randomGenreSections[0].name} Movies`}
+                    subHeading={`Explore ${randomGenreSections[0].name.toLowerCase()} titles`}
+                    altLink={{ route: `/genre/${randomGenreSections[0].id}?type=movie`, text: "View All" }}
+                >
+                    <FilmRow films={randomGenreSections[0].films} />
+                </PageSection>
+            )}
 
             {popularPeople && popularPeople.length > 0 && (
                 <PageSection
@@ -85,34 +110,47 @@ export default function Home({
                 </PageSection>
             )}
 
-            <PageSection
-                heading="Romance Movies"
-                subHeading="Fall in love with these picks"
-                altLink={{ route: "/genre/10749?type=movie", text: "View All" }}
-            >
-                <FilmRow films={romanceMovies} />
-            </PageSection>
+            {communityFavorites.length > 0 && (
+                <PageSection
+                    heading="Community Favorites"
+                    subHeading="Most saved to watchlists"
+                >
+                    <FilmRow films={communityFavorites} />
+                </PageSection>
+            )}
 
-            <PageSection
-                heading="Action Movies"
-                subHeading="Non-stop thrills and excitement"
-                altLink={{ route: "/genre/28?type=movie", text: "View All" }}
-            >
-                <FilmRow films={actionMovies} />
-            </PageSection>
+            {randomGenreSections.length > 1 && randomGenreSections[1] && (
+                <PageSection
+                    heading={`${randomGenreSections[1].name} Movies`}
+                    subHeading={`Explore ${randomGenreSections[1].name.toLowerCase()} titles`}
+                    altLink={{ route: `/genre/${randomGenreSections[1].id}?type=movie`, text: "View All" }}
+                >
+                    <FilmRow films={randomGenreSections[1].films} />
+                </PageSection>
+            )}
 
-            <PageSection
-                heading={`Top 10 on ${appData.name}`}
-                subHeading="The most popular titles right now"
-                altLink={{ route: "/popular", text: "View All" }}
-            >
-                <Top10Row films={popularOnApp} />
-            </PageSection>
+            {top10OnApp.length > 0 && (
+                <PageSection
+                    heading={`Top 10 on ${appData.name}`}
+                    subHeading="The most popular titles right now"
+                >
+                    <Top10Row films={top10OnApp} />
+                </PageSection>
+            )}
+
+            {randomGenreSections.length > 2 && randomGenreSections[2] && (
+                <PageSection
+                    heading={`${randomGenreSections[2].name} Movies`}
+                    subHeading={`Explore ${randomGenreSections[2].name.toLowerCase()} titles`}
+                    altLink={{ route: `/genre/${randomGenreSections[2].id}?type=movie`, text: "View All" }}
+                >
+                    <FilmRow films={randomGenreSections[2].films} />
+                </PageSection>
+            )}
 
             <PageSection
                 heading="Browse by Genre"
                 subHeading="Find something that matches your mood"
-                altLink={{ route: "/genres", text: "All Genres" }}
             >
                 <GenreRow genres={genres} />
             </PageSection>

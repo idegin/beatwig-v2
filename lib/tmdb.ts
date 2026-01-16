@@ -157,18 +157,12 @@ export async function getHomePageData() {
             trendingData,
             nowPlayingData,
             upcomingData,
-            romanceData,
-            actionData,
-            popularData,
             genresData,
             popularPeopleData,
         ] = await Promise.all([
             getTrendingAll("week"),
             getNowPlayingMovies(),
             getUpcomingMovies(),
-            getMoviesByGenre(10749),
-            getMoviesByGenre(28),
-            getPopularMovies(),
             getMovieGenres(),
             getPopularPeople(),
         ])
@@ -199,33 +193,16 @@ export async function getHomePageData() {
             }
             : null
 
-        const nowShowing = nowPlayingData.results.slice(0, 10).map((f) => ({ ...f, media_type: "movie" as const }))
-        const upcoming = upcomingData.results.slice(0, 10).map((f) => ({ ...f, media_type: "movie" as const }))
-        const romance = romanceData.results.slice(0, 10).map((f) => ({ ...f, media_type: "movie" as const }))
-        const action = actionData.results.slice(0, 10).map((f) => ({ ...f, media_type: "movie" as const }))
-        const popular = popularData.results.slice(0, 12).map((f) => ({ ...f, media_type: "movie" as const }))
+        const nowShowing = nowPlayingData.results.slice(0, 12).map((f) => ({ ...f, media_type: "movie" as const }))
+        const upcoming = upcomingData.results.slice(0, 12).map((f) => ({ ...f, media_type: "movie" as const }))
         const genres = genresData.genres.slice(0, 16)
         const popularPeople = popularPeopleData.results.slice(0, 12)
-
-        const becauseYouWatched = {
-            title: trendingData.results[1]?.title || trendingData.results[1]?.name || "Trending",
-            films: trendingData.results.slice(2, 8).map((f) => ({
-                ...f,
-                media_type: (f.media_type as "movie" | "tv") || "movie",
-            })),
-        }
-
-        const networks = undefined
 
         return {
             heroData,
             nowShowingInTheaters: nowShowing,
             upcomingMovies: upcoming,
-            romanceMovies: romance,
-            actionMovies: action,
-            popularOnApp: popular,
             genres,
-            becauseYouWatched,
             popularPeople,
         }
     } catch (error) {
@@ -234,11 +211,7 @@ export async function getHomePageData() {
             heroData: null,
             nowShowingInTheaters: [],
             upcomingMovies: [],
-            romanceMovies: [],
-            actionMovies: [],
-            popularOnApp: [],
             genres: [],
-            becauseYouWatched: { title: "", films: [] },
             popularPeople: [],
         }
     }

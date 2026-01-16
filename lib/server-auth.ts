@@ -324,3 +324,323 @@ export async function getFilmWatchHistory(
     return []
   }
 }
+
+export interface TrendingFilmData {
+  filmId: number
+  mediaType: "movie" | "tv"
+  title: string
+  posterPath: string | null
+  backdropPath: string | null
+  watchCount: number
+}
+
+export interface HotThemeData {
+  name: string
+  totalRank: number
+  userCount: number
+}
+
+export interface CommunityFavoriteData {
+  filmId: number
+  mediaType: "movie" | "tv"
+  title: string
+  posterPath: string | null
+  backdropPath: string | null
+  voteAverage: number
+  saveCount: number
+}
+
+export async function getAppTrendingFilms(
+  hoursAgo = 48,
+  limit = 20
+): Promise<TrendingFilmData[]> {
+  if (!isFirebaseAdminConfigured || !adminDb) {
+    console.warn("[getAppTrendingFilms] Firebase Admin not configured")
+    return []
+  }
+
+  try {
+    const cutoffDate = new Date(Date.now() - hoursAgo * 60 * 60 * 1000)
+    
+    const snapshot = await adminDb
+      .collection(FIREBASE_COLLECTIONS.WATCH_HISTORY)
+      .where("updatedAt", ">=", cutoffDate)
+      .get()
+
+    const filmCounts = new Map<string, TrendingFilmData>()
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data()
+      const key = `${data.mediaType}_${data.filmId}`
+      
+      const existing = filmCounts.get(key)
+      if (existing) {
+        existing.watchCount++
+      } else {
+        filmCounts.set(key, {
+          filmId: data.filmId,
+          mediaType: data.mediaType,
+          title: data.title,
+          posterPath: data.posterPath,
+          backdropPath: data.backdropPath,
+          watchCount: 1,
+        })
+      }
+    })
+
+    const sorted = Array.from(filmCounts.values())
+      .sort((a, b) => b.watchCount - a.watchCount)
+      .slice(0, limit)
+
+    console.log("[getAppTrendingFilms] Found", sorted.length, "trending films")
+    return sorted
+  } catch (error) {
+    console.error("[getAppTrendingFilms] Error fetching trending films:", error)
+    return []
+  }
+}
+
+export async function getPopularOnApp(limit = 20): Promise<TrendingFilmData[]> {
+  if (!isFirebaseAdminConfigured || !adminDb) {
+    console.warn("[getPopularOnApp] Firebase Admin not configured")
+    return []
+  }
+
+  try {
+    const snapshot = await adminDb
+      .collection(FIREBASE_COLLECTIONS.WATCH_HISTORY)
+      .get()
+
+    const filmCounts = new Map<string, TrendingFilmData>()
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data()
+      const key = `${data.mediaType}_${data.filmId}`
+      
+      const existing = filmCounts.get(key)
+      if (existing) {
+        existing.watchCount++
+      } else {
+        filmCounts.set(key, {
+          filmId: data.filmId,
+          mediaType: data.mediaType,
+          title: data.title,
+          posterPath: data.posterPath,
+          backdropPath: data.backdropPath,
+          watchCount: 1,
+        })
+      }
+    })
+
+    const sorted = Array.from(filmCounts.values())
+      .sort((a, b) => b.watchCount - a.watchCount)
+      .slice(0, limit)
+
+    console.log("[getPopularOnApp] Found", sorted.length, "popular films")
+    return sorted
+  } catch (error) {
+    console.error("[getPopularOnApp] Error fetching popular films:", error)
+    return []
+  }
+}
+
+export async function getHotThemesThisWeek(limit = 10): Promise<HotThemeData[]> {
+  if (!isFirebaseAdminConfigured || !adminDb) {
+    console.warn("[getHotThemesThisWeek] Firebase Admin not configured")
+    return []
+  }
+
+  try {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    
+    const snapshot = await adminDb
+      .collection(FIREBASE_COLLECTIONS.ALGORITHM)
+      .where("updatedAt", ">=", weekAgo)
+      .get()
+
+    const themeCounts = new Map<string, HotThemeData>()
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data()
+      const tags = data.tags || []
+      
+      tags.forEach((tag: { name: string; rank: number }) => {
+        const existing = themeCounts.get(tag.name)
+        if (existing) {
+          existing.totalRank += tag.rank
+          existing.userCount++
+        } else {
+          themeCounts.set(tag.name, {
+            name: tag.name,
+            totalRank: tag.rank,
+            userCount: 1,
+          })
+        }
+      })
+    })
+
+    const sorted = Array.from(themeCounts.values())
+      .sort((a, b) => {
+        const scoreA = a.totalRank * Math.log2(a.userCount + 1)
+        const scoreB = b.totalRank * Math.log2(b.userCount + 1)
+        return scoreB - scoreA
+      })
+      .slice(0, limit)
+
+    console.log("[getHotThemesThisWeek] Found", sorted.length, "hot themes")
+    return sorted
+  } catch (error) {
+    console.error("[getHotThemesThisWeek] Error fetching hot themes:", error)
+    return []
+  }
+}
+
+export async function getCommunityFavorites(limit = 20): Promise<CommunityFavoriteData[]> {
+  if (!isFirebaseAdminConfigured || !adminDb) {
+    console.warn("[getCommunityFavorites] Firebase Admin not configured")
+    return []
+  }
+
+  try {
+    const snapshot = await adminDb
+      .collection(FIREBASE_COLLECTIONS.WATCHLIST)
+      .get()
+
+    const filmCounts = new Map<string, CommunityFavoriteData>()
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data()
+      const key = `${data.mediaType}_${data.filmId}`
+      
+      const existing = filmCounts.get(key)
+      if (existing) {
+        existing.saveCount++
+      } else {
+        filmCounts.set(key, {
+          filmId: data.filmId,
+          mediaType: data.mediaType,
+          title: data.title,
+          posterPath: data.posterPath,
+          backdropPath: data.backdropPath,
+          voteAverage: data.voteAverage || 0,
+          saveCount: 1,
+        })
+      }
+    })
+
+    const sorted = Array.from(filmCounts.values())
+      .sort((a, b) => b.saveCount - a.saveCount)
+      .slice(0, limit)
+
+    console.log("[getCommunityFavorites] Found", sorted.length, "community favorites")
+    return sorted
+  } catch (error) {
+    console.error("[getCommunityFavorites] Error fetching community favorites:", error)
+    return []
+  }
+}
+
+export interface RandomGenreData {
+  id: number
+  name: string
+  userCount: number
+}
+
+export async function getRandomGenresFromAlgorithms(limit = 3): Promise<RandomGenreData[]> {
+  if (!isFirebaseAdminConfigured || !adminDb) {
+    console.warn("[getRandomGenresFromAlgorithms] Firebase Admin not configured")
+    return []
+  }
+
+  try {
+    const snapshot = await adminDb
+      .collection(FIREBASE_COLLECTIONS.ALGORITHM)
+      .limit(100)
+      .get()
+
+    const genreCounts = new Map<string, RandomGenreData>()
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data()
+      const genres = data.genres || []
+      
+      genres.forEach((genre: { id: number; name: string; rank: number }) => {
+        const key = String(genre.id)
+        const existing = genreCounts.get(key)
+        if (existing) {
+          existing.userCount++
+        } else {
+          genreCounts.set(key, {
+            id: genre.id,
+            name: genre.name,
+            userCount: 1,
+          })
+        }
+      })
+    })
+
+    const allGenres = Array.from(genreCounts.values())
+    
+    const shuffled = allGenres.sort(() => Math.random() - 0.5)
+    const selected = shuffled.slice(0, limit)
+
+    console.log("[getRandomGenresFromAlgorithms] Selected", selected.length, "random genres")
+    return selected
+  } catch (error) {
+    console.error("[getRandomGenresFromAlgorithms] Error fetching random genres:", error)
+    return []
+  }
+}
+
+export async function getTop10OnApp(): Promise<TrendingFilmData[]> {
+  if (!isFirebaseAdminConfigured || !adminDb) {
+    console.warn("[getTop10OnApp] Firebase Admin not configured")
+    return []
+  }
+
+  try {
+    const snapshot = await adminDb
+      .collection(FIREBASE_COLLECTIONS.WATCH_HISTORY)
+      .get()
+
+    const filmCounts = new Map<string, TrendingFilmData & { totalProgress: number; watchSessions: number }>()
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data()
+      const key = `${data.mediaType}_${data.filmId}`
+      
+      const existing = filmCounts.get(key)
+      if (existing) {
+        existing.watchCount++
+        existing.totalProgress += data.progress || 0
+        existing.watchSessions++
+      } else {
+        filmCounts.set(key, {
+          filmId: data.filmId,
+          mediaType: data.mediaType,
+          title: data.title,
+          posterPath: data.posterPath,
+          backdropPath: data.backdropPath,
+          watchCount: 1,
+          totalProgress: data.progress || 0,
+          watchSessions: 1,
+        })
+      }
+    })
+
+    const sorted = Array.from(filmCounts.values())
+      .map(item => ({
+        ...item,
+        score: item.watchCount * (item.totalProgress / item.watchSessions / 100 + 0.5)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+      .map(({ totalProgress, watchSessions, score, ...rest }) => rest)
+
+    console.log("[getTop10OnApp] Found", sorted.length, "top films")
+    return sorted
+  } catch (error) {
+    console.error("[getTop10OnApp] Error fetching top 10:", error)
+    return []
+  }
+}
