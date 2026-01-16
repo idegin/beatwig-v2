@@ -9,7 +9,7 @@ interface TMDBOptions {
 }
 
 const defaultOptions: TMDBOptions = {
-    adult: true,
+    adult: false,
     language: "en-US",
 }
 

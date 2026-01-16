@@ -1,15 +1,15 @@
 import { HomeHero } from "@/components/home/home-hero"
 import { ForYouContent } from "./components/for-you-content"
-import { 
-  getForYouPageData, 
-  getRecommendationsFromAlgorithm, 
-  getRecommendationsByKeyword,
-  getNowPlayingMovies,
-  getTrendingAll,
-  getUpcomingMovies,
-  getPopularTVShows,
-  getMoviesByGenre,
-} from "@/lib/tmdb"
+import { getRecommendationsFromAlgorithm } from "@/lib/tmdb"
+import {
+  getCachedForYouPageData,
+  getCachedNowPlayingMovies,
+  getCachedTrendingAll,
+  getCachedUpcomingMovies,
+  getCachedPopularTVShows,
+  getCachedMoviesByGenre,
+  getCachedRecommendationsByKeyword,
+} from "@/lib/cache"
 import { getAuthToken } from "@/lib/auth-cookies"
 import { verifyAuthToken, getUserAlgorithm, getUserWatchHistory } from "@/lib/server-auth"
 import { TMDB_IMAGE_BASE, ALGORITHM_RECENCY_DECAY_DAYS } from "@/app/constants"
@@ -72,7 +72,7 @@ function getWeightedItems<T extends { rank: number; lastInteractedAt: Date }>(
 }
 
 export default async function ForYouPage() {
-  const data = await getForYouPageData()
+  const data = await getCachedForYouPageData()
   
   let algorithmRecommendations: { title: string; films: Film[]; mediaType: "movie" | "tv" }[] = []
   let continueWatchingItems: ContinueWatchingItem[] = []
@@ -91,10 +91,10 @@ export default async function ForYouPage() {
   let whatOthersWatching: Film[] = []
 
   const [nowPlayingData, trendingData, upcomingData, popularTVData] = await Promise.all([
-    getNowPlayingMovies().catch(() => ({ results: [] })),
-    getTrendingAll("week").catch(() => ({ results: [] })),
-    getUpcomingMovies().catch(() => ({ results: [] })),
-    getPopularTVShows().catch(() => ({ results: [] })),
+    getCachedNowPlayingMovies().catch(() => ({ results: [] })),
+    getCachedTrendingAll("week").catch(() => ({ results: [] })),
+    getCachedUpcomingMovies().catch(() => ({ results: [] })),
+    getCachedPopularTVShows().catch(() => ({ results: [] })),
   ])
 
   nowPlayingFilms = nowPlayingData.results.slice(0, 12).map((f) => ({
@@ -226,7 +226,7 @@ export default async function ForYouPage() {
       const [genreFilmsResults, themeFilmsResults] = await Promise.all([
         Promise.all(
           POPULAR_GENRES.slice(0, 3).map(async (genre) => {
-            const films = await getMoviesByGenre(genre.id, 1).catch(() => ({ results: [] as Film[], total_pages: 0 }))
+            const films = await getCachedMoviesByGenre(genre.id, 1).catch(() => ({ results: [] as Film[], total_pages: 0 }))
             return {
               genreName: genre.name,
               films: films.results.slice(0, 12).map((f: Film) => ({ ...f, media_type: "movie" as const })),
@@ -235,7 +235,7 @@ export default async function ForYouPage() {
         ),
         Promise.all(
           POPULAR_KEYWORDS.slice(0, 3).map(async (keyword) => {
-            const result = await getRecommendationsByKeyword(keyword).catch(() => null)
+            const result = await getCachedRecommendationsByKeyword(keyword).catch(() => null)
             return {
               name: keyword,
               films: result?.films || [],

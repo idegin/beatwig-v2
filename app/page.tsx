@@ -1,16 +1,19 @@
 import { HomeHero } from "@/components/home/home-hero"
 import Home from "@/components/home/home"
-import { getHomePageData, getMoviesByGenre } from "@/lib/tmdb"
+import { 
+  getCachedHomePageData,
+  getCachedPopularOnApp,
+  getCachedHotThemesThisWeek,
+  getCachedCommunityFavorites,
+  getCachedAppTrendingFilms,
+  getCachedRandomGenresFromAlgorithms,
+  getCachedTop10OnApp,
+  getCachedMoviesByGenre,
+} from "@/lib/cache"
 import { getAuthToken } from "@/lib/auth-cookies"
 import { 
   verifyAuthToken, 
   getUserAlgorithm,
-  getPopularOnApp,
-  getHotThemesThisWeek,
-  getCommunityFavorites,
-  getAppTrendingFilms,
-  getRandomGenresFromAlgorithms,
-  getTop10OnApp,
   TrendingFilmData,
   CommunityFavoriteData,
 } from "@/lib/server-auth"
@@ -66,13 +69,13 @@ export default async function Page() {
     randomGenresData,
     top10Data,
   ] = await Promise.all([
-    getHomePageData(),
-    getPopularOnApp(12).catch(() => []),
-    getHotThemesThisWeek(10).catch(() => []),
-    getCommunityFavorites(12).catch(() => []),
-    getAppTrendingFilms(48, 12).catch(() => []),
-    getRandomGenresFromAlgorithms(3).catch(() => []),
-    getTop10OnApp().catch(() => []),
+    getCachedHomePageData(),
+    getCachedPopularOnApp(12).catch(() => []),
+    getCachedHotThemesThisWeek(10).catch(() => []),
+    getCachedCommunityFavorites(12).catch(() => []),
+    getCachedAppTrendingFilms(48, 12).catch(() => []),
+    getCachedRandomGenresFromAlgorithms(3).catch(() => []),
+    getCachedTop10OnApp().catch(() => []),
   ])
 
   let showRecommendationBanner = false
@@ -92,7 +95,7 @@ export default async function Page() {
 
   const randomGenreSections = await Promise.all(
     randomGenresData.map(async (genre) => {
-      const films = await getMoviesByGenre(genre.id, 1).catch(() => ({ results: [] as Film[], total_pages: 0 }))
+      const films = await getCachedMoviesByGenre(genre.id, 1).catch(() => ({ results: [] as Film[], total_pages: 0 }))
       return {
         id: genre.id,
         name: genre.name,
