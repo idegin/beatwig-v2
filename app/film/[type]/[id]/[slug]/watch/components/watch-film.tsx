@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/hover-card"
 import { FilmDetailsData, Episode, Season } from "@/types/tmdb.types"
 import { EpisodeBrowser } from "./episode-browser"
+import { useWatchHistory } from "@/hooks/use-watch-history"
 
 interface WatchFilmProps {
   data: FilmDetailsData
@@ -34,6 +35,33 @@ const SERVERS = [
   { id: "c", name: "Server C", domain: "vidsrcme.su", type: "vidsrc-embed" as const },
   { id: "d", name: "Server D", domain: "vsrc.su", type: "vidsrc-embed" as const },
 ]
+
+const SELECTED_SERVER_KEY = "beatwig-selected-server"
+
+function getStoredServer(): typeof SERVERS[0] {
+  if (typeof window === "undefined") return SERVERS[0]
+  
+  try {
+    const stored = localStorage.getItem(SELECTED_SERVER_KEY)
+    if (stored) {
+      const server = SERVERS.find((s) => s.id === stored)
+      if (server) return server
+    }
+  } catch (error) {
+    console.error("Error reading from localStorage:", error)
+  }
+  return SERVERS[0]
+}
+
+function storeServer(serverId: string): void {
+  if (typeof window === "undefined") return
+  
+  try {
+    localStorage.setItem(SELECTED_SERVER_KEY, serverId)
+  } catch (error) {
+    console.error("Error writing to localStorage:", error)
+  }
+}
 
 function slugify(text: string): string {
   return text
@@ -54,18 +82,56 @@ export function WatchFilm({
 }: WatchFilmProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const iframeRef = React.useRef<HTMLIFrameElement>(null)
   const [browserOpen, setBrowserOpen] = React.useState(false)
-  const [selectedServer, setSelectedServer] = React.useState(SERVERS[0])
+  const [selectedServer, setSelectedServer] = React.useState(getStoredServer)
   const [showControls, setShowControls] = React.useState(true)
   const [episodes, setEpisodes] = React.useState<Episode[]>([])
   const [loadingEpisodes, setLoadingEpisodes] = React.useState(false)
   const controlsTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+
+  const handleServerChange = (server: typeof SERVERS[0]) => {
+    setSelectedServer(server)
+    storeServer(server.id)
+  }
 
   const currentSeason = parseInt(searchParams.get("season") || String(initialSeason))
   const currentEpisode = parseInt(searchParams.get("episode") || String(initialEpisode))
 
   const isTV = mediaType === "tv"
   const seasons = data.seasons?.filter((s) => s.season_number > 0) || []
+
+  const currentEpisodeData = episodes.find((ep) => ep.episode_number === currentEpisode)
+
+  const watchHistoryData = React.useMemo(
+    () => ({
+      filmId,
+      mediaType,
+      title: data.title,
+      posterPath: data.poster_path,
+      backdropPath: data.backdrop_path,
+      voteAverage: data.vote_average,
+      releaseDate: data.release_date || "",
+      runtime: isTV ? (currentEpisodeData?.runtime ?? 45) : (data.runtime ?? null),
+      originalLanguage: data.original_language,
+      country: data.production_countries?.[0]?.iso_3166_1 || "",
+      tags: data.keywords?.map((k) => k.name) || [],
+      genres: data.genreObjects || [],
+      genreIds: data.genreObjects?.map((g) => g.id) || [],
+      popularity: data.popularity || 0,
+      ...(isTV && {
+        season: currentSeason,
+        episode: currentEpisode,
+        episodeTitle: currentEpisodeData?.name,
+      }),
+    }),
+    [filmId, mediaType, data, isTV, currentSeason, currentEpisode, currentEpisodeData]
+  )
+
+  useWatchHistory({
+    filmData: watchHistoryData,
+    iframeRef,
+  })
 
   React.useEffect(() => {
     if (isTV && currentSeason) {
@@ -110,7 +176,6 @@ export function WatchFilm({
     return `https://${selectedServer.domain}/embed/movie/${filmId}`
   }
 
-  const currentEpisodeData = episodes.find((ep) => ep.episode_number === currentEpisode)
   const nextEpisodeData = episodes.find((ep) => ep.episode_number === currentEpisode + 1)
   const prevEpisodeData = episodes.find((ep) => ep.episode_number === currentEpisode - 1)
 
@@ -168,6 +233,7 @@ export function WatchFilm({
       onMouseMove={handleMouseMove}
     >
       <iframe
+        ref={iframeRef}
         src={getIframeUrl()}
         className="absolute inset-0 w-full h-full"
         allowFullScreen
@@ -270,7 +336,7 @@ export function WatchFilm({
                   {SERVERS.map((server) => (
                     <DropdownMenuItem
                       key={server.id}
-                      onClick={() => setSelectedServer(server)}
+                      onClick={() => handleServerChange(server)}
                       className={selectedServer.id === server.id ? "bg-primary/10 text-primary" : ""}
                     >
                       {server.name}

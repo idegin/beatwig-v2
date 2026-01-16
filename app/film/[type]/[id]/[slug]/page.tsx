@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import FilmDetails from "@/app/film/components/film-details"
 import { getFilmDetails } from "@/lib/tmdb"
 import { getAuthToken } from "@/lib/auth-cookies"
-import { verifyAuthToken, isFilmBookmarked } from "@/lib/server-auth"
+import { verifyAuthToken, isFilmBookmarked, getFilmWatchHistory } from "@/lib/server-auth"
 
 interface FilmDetailsPageProps {
   params: Promise<{
@@ -126,11 +126,18 @@ export default async function FilmDetailsPage({ params }: FilmDetailsPageProps) 
   }
 
   let initialIsBookmarked = false
+  let userWatchHistory: { season?: number; episode?: number; progress: number; updatedAt: Date }[] = []
+  
   const token = await getAuthToken()
   if (token) {
     const user = await verifyAuthToken(token)
     if (user) {
-      initialIsBookmarked = await isFilmBookmarked(user.uid, filmId, mediaType)
+      const [isBookmarked, filmHistory] = await Promise.all([
+        isFilmBookmarked(user.uid, filmId, mediaType),
+        mediaType === "tv" ? getFilmWatchHistory(user.uid, filmId, mediaType, 10) : Promise.resolve([])
+      ])
+      initialIsBookmarked = isBookmarked
+      userWatchHistory = filmHistory
     }
   }
 
@@ -139,6 +146,7 @@ export default async function FilmDetailsPage({ params }: FilmDetailsPageProps) 
       data={data}
       mediaType={mediaType}
       initialIsBookmarked={initialIsBookmarked}
+      userWatchHistory={userWatchHistory}
     />
   )
 }

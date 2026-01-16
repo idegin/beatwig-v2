@@ -305,6 +305,160 @@ export async function getForYouPageData() {
     }
 }
 
+export async function getRecommendationsFromAlgorithm(
+    algorithmItems: {
+        id: number
+        mediaType: "movie" | "tv"
+        title: string
+        genreIds: number[]
+        rank: number
+        lastInteractedAt?: Date
+        interactionCount?: number
+    }[],
+    count: number = 3,
+    diversityFactor: number = 0.3
+): Promise<{ title: string; films: Film[]; mediaType: "movie" | "tv" }[]> {
+    if (!algorithmItems.length) {
+        return []
+    }
+
+    const calculateRecencyScore = (date?: Date): number => {
+        if (!date) return 0.5
+        const daysSince = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24))
+        if (daysSince <= 0) return 1
+        if (daysSince >= 30) return 0.1
+        return Math.max(0.1, 1 - (daysSince / 30) * 0.9)
+    }
+
+    const weightedItems = algorithmItems.map((item, index) => {
+        const recencyScore = calculateRecencyScore(item.lastInteractedAt)
+        const normalizedRank = Math.min(item.rank, 20) / 20
+        const randomFactor = Math.random() * diversityFactor
+        const positionPenalty = index * 0.03
+        
+        const weight = 
+            (normalizedRank * 0.5) + 
+            (recencyScore * 0.3) + 
+            randomFactor - 
+            positionPenalty
+
+        return { item, weight }
+    })
+
+    weightedItems.sort((a, b) => b.weight - a.weight)
+    
+    const selectedItems = weightedItems.slice(0, Math.min(count, algorithmItems.length))
+    const recommendations: { title: string; films: Film[]; mediaType: "movie" | "tv" }[] = []
+
+    const seenGenres = new Set<number>()
+    
+    for (const { item } of selectedItems) {
+        const primaryGenres = item.genreIds.slice(0, 2)
+        const hasOverlap = primaryGenres.some(g => seenGenres.has(g))
+        
+        if (hasOverlap && recommendations.length >= 2) {
+            continue
+        }
+
+        try {
+            const endpoint = item.mediaType === "movie" 
+                ? `/movie/${item.id}/recommendations` 
+                : `/tv/${item.id}/recommendations`
+            
+            const randomPage = Math.floor(Math.random() * 3) + 1
+            const data = await fetchTMDB<{ results: Film[] }>(endpoint, { page: randomPage })
+            
+            if (data.results && data.results.length > 0) {
+                const shuffledResults = [...data.results]
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 12)
+                
+                recommendations.push({
+                    title: item.title,
+                    mediaType: item.mediaType,
+                    films: shuffledResults.map((f) => ({
+                        ...f,
+                        media_type: item.mediaType,
+                    })),
+                })
+                
+                primaryGenres.forEach(g => seenGenres.add(g))
+            }
+        } catch (error) {
+            console.error(`Error fetching recommendations for ${item.id}:`, error)
+        }
+    }
+
+    return recommendations
+}
+
+export async function getRecommendationsByGenre(
+    genreId: number,
+    genreName: string,
+    mediaType: "movie" | "tv" = "movie"
+): Promise<{ genreName: string; films: Film[] } | null> {
+    try {
+        const endpoint = mediaType === "movie" ? "/discover/movie" : "/discover/tv"
+        const randomPage = Math.floor(Math.random() * 5) + 1
+        const data = await fetchTMDB<{ results: Film[] }>(endpoint, {
+            with_genres: genreId,
+            sort_by: "popularity.desc",
+            page: randomPage,
+        })
+
+        if (data.results && data.results.length > 0) {
+            return {
+                genreName,
+                films: data.results.slice(0, 12).map((f) => ({
+                    ...f,
+                    media_type: mediaType,
+                })),
+            }
+        }
+        return null
+    } catch (error) {
+        console.error("Error fetching recommendations by genre:", error)
+        return null
+    }
+}
+
+export async function getRecommendationsByKeyword(
+    keyword: string
+): Promise<{ keyword: string; films: Film[] } | null> {
+    try {
+        const searchData = await fetchTMDB<{ results: { id: number; name: string }[] }>(
+            "/search/keyword",
+            { query: keyword }
+        )
+        
+        if (!searchData.results || searchData.results.length === 0) {
+            return null
+        }
+
+        const keywordId = searchData.results[0].id
+        const randomPage = Math.floor(Math.random() * 3) + 1
+        
+        const moviesData = await fetchTMDB<{ results: Film[] }>(
+            "/discover/movie",
+            { with_keywords: keywordId, sort_by: "popularity.desc", page: randomPage }
+        )
+
+        if (moviesData.results && moviesData.results.length > 0) {
+            return {
+                keyword,
+                films: moviesData.results.slice(0, 12).map((f) => ({
+                    ...f,
+                    media_type: "movie" as const,
+                })),
+            }
+        }
+        return null
+    } catch (error) {
+        console.error("Error fetching recommendations by keyword:", error)
+        return null
+    }
+}
+
 export async function getFilmDetails(id: number, mediaType: "movie" | "tv"): Promise<FilmDetailsData> {
     const endpoint = mediaType === "movie" ? `/movie/${id}` : `/tv/${id}`
     const data = await fetchTMDB<Record<string, unknown>>(endpoint, {
@@ -321,7 +475,8 @@ export async function getFilmDetails(id: number, mediaType: "movie" | "tv"): Pro
     )
     const trailer = videos.find((v: Video) => v.type === "Trailer") || videos[0]
 
-    const genres = ((data.genres as { id: number; name: string }[]) || []).map((g) => g.name)
+    const genreObjects = (data.genres as { id: number; name: string }[]) || []
+    const genres = genreObjects.map((g) => g.name)
 
     const credits = data.credits as { cast: CastMember[]; crew: CrewMember[] } | undefined
     const cast = (credits?.cast || []).slice(0, 15)
@@ -357,8 +512,10 @@ export async function getFilmDetails(id: number, mediaType: "movie" | "tv"): Pro
         vote_average: data.vote_average as number,
         runtime,
         genres,
+        genreObjects,
         status: data.status as string,
         original_language: data.original_language as string,
+        popularity: data.popularity as number | undefined,
         budget: data.budget as number | undefined,
         revenue: data.revenue as number | undefined,
         video_key: trailer?.key,

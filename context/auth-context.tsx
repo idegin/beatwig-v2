@@ -12,6 +12,8 @@ import { auth, googleProvider, isFirebaseConfigured } from "@/lib/firebase"
 import { getOrCreateUser, FirestoreUser } from "@/lib/firestore/users"
 import { ServerUser } from "@/lib/server-auth"
 
+const TOKEN_REFRESH_INTERVAL = 45 * 60 * 1000
+
 interface AuthState {
     user: User | null
     firestoreUser: FirestoreUser | null
@@ -46,12 +48,13 @@ const AuthContext = React.createContext<AuthContextType | null>(null)
 async function syncAuthCookie(user: User | null): Promise<void> {
     if (user) {
         try {
-            const token = await user.getIdToken()
+            const token = await user.getIdToken(true)
             await fetch("/api/auth/session", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token }),
             })
+            console.log("[Auth] Token synced successfully")
         } catch (error) {
             console.error("Failed to sync auth cookie:", error)
         }
@@ -73,6 +76,22 @@ export function AuthProvider({ children, initialServerUser }: AuthProviderProps)
         serverUser: initialServerUser || null,
         loading: !initialServerUser,
     })
+    const refreshIntervalRef = React.useRef<NodeJS.Timeout | null>(null)
+
+    const refreshToken = React.useCallback(async (user: User) => {
+        try {
+            console.log("[Auth] Refreshing token...")
+            const token = await user.getIdToken(true)
+            await fetch("/api/auth/session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token }),
+            })
+            console.log("[Auth] Token refreshed successfully")
+        } catch (error) {
+            console.error("[Auth] Failed to refresh token:", error)
+        }
+    }, [])
 
     React.useEffect(() => {
         if (!isFirebaseConfigured || !auth) {
@@ -89,9 +108,18 @@ export function AuthProvider({ children, initialServerUser }: AuthProviderProps)
         const unsubscribe = onAuthStateChanged(
             auth,
             async (user: User | null) => {
+                if (refreshIntervalRef.current) {
+                    clearInterval(refreshIntervalRef.current)
+                    refreshIntervalRef.current = null
+                }
+
                 await syncAuthCookie(user)
 
                 if (user) {
+                    refreshIntervalRef.current = setInterval(() => {
+                        refreshToken(user)
+                    }, TOKEN_REFRESH_INTERVAL)
+
                     try {
                         const firestoreUser = await getOrCreateUser(user)
                         setAuthState({
@@ -132,6 +160,10 @@ export function AuthProvider({ children, initialServerUser }: AuthProviderProps)
                 }
             },
             (error: Error) => {
+                if (refreshIntervalRef.current) {
+                    clearInterval(refreshIntervalRef.current)
+                    refreshIntervalRef.current = null
+                }
                 setAuthState({
                     user: null,
                     firestoreUser: null,
@@ -142,8 +174,38 @@ export function AuthProvider({ children, initialServerUser }: AuthProviderProps)
             }
         )
 
-        return () => unsubscribe()
-    }, [])
+        return () => {
+            unsubscribe()
+            if (refreshIntervalRef.current) {
+                clearInterval(refreshIntervalRef.current)
+                refreshIntervalRef.current = null
+            }
+        }
+    }, [refreshToken])
+
+    React.useEffect(() => {
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === "visible" && authState.user) {
+                console.log("[Auth] Tab became visible, refreshing token...")
+                await refreshToken(authState.user)
+            }
+        }
+
+        const handleFocus = async () => {
+            if (authState.user) {
+                console.log("[Auth] Window focused, refreshing token...")
+                await refreshToken(authState.user)
+            }
+        }
+
+        document.addEventListener("visibilitychange", handleVisibilityChange)
+        window.addEventListener("focus", handleFocus)
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange)
+            window.removeEventListener("focus", handleFocus)
+        }
+    }, [authState.user, refreshToken])
 
     const signInWithGoogle = React.useCallback(async () => {
         if (!isFirebaseConfigured || !auth || !googleProvider) {

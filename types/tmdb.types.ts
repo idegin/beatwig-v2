@@ -192,8 +192,10 @@ export interface FilmDetailsData {
   runtime?: number
   certification?: string
   genres: string[]
+  genreObjects: { id: number; name: string }[]
   status: string
   original_language: string
+  popularity?: number
   budget?: number
   revenue?: number
   video_key?: string

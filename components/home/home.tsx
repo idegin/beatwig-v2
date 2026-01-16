@@ -6,6 +6,7 @@ import { FilmRow } from "@/components/film-row"
 import { GenreRow } from "./genre-row"
 import { PeopleRow } from "./people-row"
 import { Top10Row } from "./top-10-row"
+import { RecommendationBanner } from "./recommendation-banner"
 import { ContinueWatchingItem } from "@/types/firebase.types"
 import { Film, Genre, HeroData, Person } from "@/types/tmdb.types"
 import { appData } from "@/app/constants"
@@ -24,6 +25,7 @@ interface HomeProps {
     genres: Genre[]
     heroData: HeroData
     popularPeople?: Person[]
+    showRecommendationBanner?: boolean
 }
 
 export default function Home({
@@ -36,9 +38,12 @@ export default function Home({
     popularOnApp,
     genres,
     popularPeople,
+    showRecommendationBanner = false,
 }: HomeProps) {
     return (
         <div className="space-y-2 md:space-y-4">
+            {showRecommendationBanner && <RecommendationBanner />}
+            
             <PageSection
                 heading="Continue Watching"
                 subHeading="Pick up where you left off"

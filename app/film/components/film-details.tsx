@@ -27,6 +27,12 @@ interface FilmDetailsProps {
     data: FilmDetailsData
     mediaType: "movie" | "tv"
     initialIsBookmarked?: boolean
+    userWatchHistory?: {
+        season?: number
+        episode?: number
+        progress: number
+        updatedAt: Date
+    }[]
 }
 
 function slugify(text: string): string {
@@ -38,7 +44,7 @@ function slugify(text: string): string {
         .trim()
 }
 
-export default function FilmDetails({ data, mediaType, initialIsBookmarked = false }: FilmDetailsProps) {
+export default function FilmDetails({ data, mediaType, initialIsBookmarked = false, userWatchHistory = [] }: FilmDetailsProps) {
     const { authState, isAuthenticated } = useAuth()
     const { isInWatchlist, isLoading: watchlistLoading, toggleWatchlist, checkBookmark } = useWatchlist(initialIsBookmarked)
     const [trailerOpen, setTrailerOpen] = React.useState(false)
@@ -147,6 +153,12 @@ export default function FilmDetails({ data, mediaType, initialIsBookmarked = fal
                         seasons={data.seasons}
                         showId={data.id}
                         showTitle={data.title}
+                        userWatchHistory={userWatchHistory.map(h => ({
+                            season: h.season || 1,
+                            episode: h.episode || 1,
+                            progress: h.progress,
+                            updatedAt: h.updatedAt,
+                        }))}
                     />
                 )}
 

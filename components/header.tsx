@@ -214,9 +214,11 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="size-4" />
-                    Profile
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                      <User className="size-4" />
+                      Profile
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/watchlist">
@@ -224,9 +226,11 @@ export function Header() {
                       Watch List
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Clock className="size-4" />
-                    Watch History
+                  <DropdownMenuItem asChild>
+                    <Link href="/history">
+                      <Clock className="size-4" />
+                      Watch History
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 

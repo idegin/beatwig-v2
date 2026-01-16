@@ -2,11 +2,15 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Play, Plus, Volume2, VolumeX, Info, Video, VideoOff, Star } from "lucide-react"
+import { Play, Plus, Check, Volume2, VolumeX, Info, Video, VideoOff, Star, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { useAppSettings } from "@/context/app-settings-context"
+import { useWatchlist } from "@/hooks/use-watchlist"
+import { useAuth } from "@/context/auth-context"
 import { HeroData } from "@/types/tmdb.types"
 import { TMDB_IMAGE_BASE } from "@/app/constants"
+import { AuthPopup } from "@/components/auth-popup"
 
 interface HomeHeroProps {
   data: HeroData
@@ -14,7 +18,23 @@ interface HomeHeroProps {
 
 export function HomeHero({ data }: HomeHeroProps) {
   const { settings, updateSettings } = useAppSettings()
+  const { isAuthenticated } = useAuth()
   const videoRef = React.useRef<HTMLVideoElement>(null)
+  const [trailerOpen, setTrailerOpen] = React.useState(false)
+  const [authPopupOpen, setAuthPopupOpen] = React.useState(false)
+
+  const {
+    isInWatchlist,
+    isLoading: isWatchlistLoading,
+    toggleWatchlist,
+    checkBookmark,
+  } = useWatchlist()
+
+  React.useEffect(() => {
+    if (isAuthenticated && data.id && data.media_type) {
+      checkBookmark(data.id, data.media_type)
+    }
+  }, [isAuthenticated, data.id, data.media_type, checkBookmark])
 
   const slugify = (text: string) => {
     return text
@@ -55,6 +75,30 @@ export function HomeHero({ data }: HomeHeroProps) {
     const hours = Math.floor(minutes / 60)
     const mins = minutes % 60
     return `${hours}h ${mins}m`
+  }
+
+  const handleWatchTrailer = () => {
+    if (data.video_key) {
+      setTrailerOpen(true)
+    }
+  }
+
+  const handleAddToWatchlist = async () => {
+    if (!isAuthenticated) {
+      setAuthPopupOpen(true)
+      return
+    }
+
+    await toggleWatchlist({
+      filmId: data.id,
+      mediaType: data.media_type,
+      title: data.title,
+      posterPath: data.poster_path,
+      backdropPath: data.backdrop_path,
+      voteAverage: data.vote_average,
+      releaseDate: data.release_date,
+      overview: data.overview,
+    })
   }
 
   return (
@@ -119,7 +163,9 @@ export function HomeHero({ data }: HomeHeroProps) {
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button
                 size="lg"
-                className="h-12 gap-2 rounded-full bg-primary px-8 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40"
+                onClick={handleWatchTrailer}
+                disabled={!data.video_key}
+                className="h-12 gap-2 rounded-full bg-primary px-8 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Play className="size-5 fill-current" />
                 Watch Trailer
@@ -128,10 +174,18 @@ export function HomeHero({ data }: HomeHeroProps) {
               <Button
                 size="lg"
                 variant="outline"
+                onClick={handleAddToWatchlist}
+                disabled={isWatchlistLoading}
                 className="h-12 gap-2 rounded-full border-2 border-foreground/20 bg-foreground/10 px-8 text-base font-semibold text-foreground backdrop-blur-sm transition-all hover:scale-105 hover:border-foreground/40 hover:bg-foreground/20"
               >
-                <Plus className="size-5" />
-                Add to Watch List
+                {isWatchlistLoading ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : isInWatchlist ? (
+                  <Check className="size-5" />
+                ) : (
+                  <Plus className="size-5" />
+                )}
+                {isInWatchlist ? "In Watch List" : "Add to Watch List"}
               </Button>
 
               <Button
@@ -187,6 +241,32 @@ export function HomeHero({ data }: HomeHeroProps) {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 z-10 h-32 bg-linear-to-t from-background to-transparent" />
+
+      <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
+        <DialogContent className="max-w-5xl w-[95vw] p-0 bg-black border-0 overflow-hidden">
+          <DialogTitle className="sr-only">{data.title} - Trailer</DialogTitle>
+          <div className="relative aspect-video">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTrailerOpen(false)}
+              className="absolute top-4 right-4 z-50 size-10 rounded-full bg-black/50 hover:bg-black/70 text-white"
+            >
+              <X className="size-5" />
+            </Button>
+            {trailerOpen && data.video_key && (
+              <iframe
+                src={`https://www.youtube.com/embed/${data.video_key}?autoplay=1&rel=0&modestbranding=1`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="h-full w-full"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AuthPopup open={authPopupOpen} onOpenChange={setAuthPopupOpen} />
     </section>
   )
 }

@@ -50,10 +50,18 @@ interface Season {
   air_date: string
 }
 
+interface UserEpisodeHistory {
+  season: number
+  episode: number
+  progress: number
+  updatedAt: Date
+}
+
 interface SeasonsEpisodesProps {
   seasons: Season[]
   showId: number
   showTitle: string
+  userWatchHistory?: UserEpisodeHistory[]
 }
 
 function slugify(text: string): string {
@@ -212,13 +220,38 @@ function EpisodeCard({
   )
 }
 
-export function SeasonsEpisodes({ seasons, showId, showTitle }: SeasonsEpisodesProps) {
+export function SeasonsEpisodes({ seasons, showId, showTitle, userWatchHistory = [] }: SeasonsEpisodesProps) {
   const validSeasons = seasons.filter((s) => s.season_number > 0)
-  const [selectedSeason, setSelectedSeason] = React.useState(
-    validSeasons.length > 0 ? validSeasons[validSeasons.length - 1].season_number.toString() : "1"
-  )
+  
+  const getInitialSeason = () => {
+    if (userWatchHistory.length > 0) {
+      const sortedHistory = [...userWatchHistory].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+      return sortedHistory[0].season.toString()
+    }
+    return validSeasons.length > 0 ? validSeasons[0].season_number.toString() : "1"
+  }
+  
+  const [selectedSeason, setSelectedSeason] = React.useState(getInitialSeason())
   const [episodes, setEpisodes] = React.useState<Episode[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [lastWatchedEpisode, setLastWatchedEpisode] = React.useState<number | null>(null)
+  const carouselRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (userWatchHistory.length > 0) {
+      const historyForSeason = userWatchHistory
+        .filter(h => h.season.toString() === selectedSeason)
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      
+      if (historyForSeason.length > 0) {
+        setLastWatchedEpisode(historyForSeason[0].episode)
+      } else {
+        setLastWatchedEpisode(null)
+      }
+    }
+  }, [selectedSeason, userWatchHistory])
 
   React.useEffect(() => {
     async function fetchEpisodes() {
@@ -226,7 +259,18 @@ export function SeasonsEpisodes({ seasons, showId, showTitle }: SeasonsEpisodesP
       try {
         const response = await fetch(`/api/public/episodes?showId=${showId}&season=${selectedSeason}`)
         const data = await response.json()
-        setEpisodes(data.episodes || [])
+        
+        const episodesWithProgress = (data.episodes || []).map((ep: Episode) => {
+          const historyItem = userWatchHistory.find(
+            h => h.season.toString() === selectedSeason && h.episode === ep.episode_number
+          )
+          return {
+            ...ep,
+            watchProgress: historyItem?.progress || 0,
+          }
+        })
+        
+        setEpisodes(episodesWithProgress)
       } catch (error) {
         console.error("Failed to fetch episodes:", error)
         setEpisodes([])
@@ -236,7 +280,7 @@ export function SeasonsEpisodes({ seasons, showId, showTitle }: SeasonsEpisodesP
     }
 
     fetchEpisodes()
-  }, [showId, selectedSeason])
+  }, [showId, selectedSeason, userWatchHistory])
 
   if (validSeasons.length === 0) {
     return null
@@ -278,29 +322,52 @@ export function SeasonsEpisodes({ seasons, showId, showTitle }: SeasonsEpisodesP
           </CarouselContent>
         </Carousel>
       ) : episodes.length > 0 ? (
-        <Carousel
-          opts={{
-            align: "start",
-            loop: false,
-            dragFree: true,
-          }}
-          className="w-full"
-        >
-          <CarouselContent className="-ml-3 md:-ml-4">
-            {episodes.map((episode) => (
-              <CarouselItem key={episode.id} className="pl-3 md:pl-4 basis-auto">
-                <EpisodeCard 
-                  episode={episode}
-                  showId={showId}
-                  showTitle={showTitle}
-                  selectedSeason={selectedSeason}
-                />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="-left-4 size-10 bg-background/90 shadow-lg backdrop-blur-sm border-0 hover:bg-background hover:scale-110 transition-all disabled:opacity-0" />
-          <CarouselNext className="-right-4 size-10 bg-background/90 shadow-lg backdrop-blur-sm border-0 hover:bg-background hover:scale-110 transition-all disabled:opacity-0" />
-        </Carousel>
+        <>
+          {lastWatchedEpisode && (
+            <div className="mb-4 p-3 bg-primary/10 border border-primary/30 rounded-lg flex items-center gap-3">
+              <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <Play className="size-4 text-primary fill-current" />
+              </div>
+              <p className="text-sm text-foreground">
+                <span className="font-medium">Continue watching:</span> Episode {lastWatchedEpisode}
+              </p>
+            </div>
+          )}
+          <Carousel
+            opts={{
+              align: "start",
+              loop: false,
+              dragFree: true,
+              startIndex: lastWatchedEpisode ? Math.max(0, lastWatchedEpisode - 1) : 0,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-3 md:-ml-4">
+              {episodes.map((episode) => (
+                <CarouselItem key={episode.id} className="pl-3 md:pl-4 basis-auto">
+                  <div className={cn(
+                    "relative",
+                    lastWatchedEpisode === episode.episode_number && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-xl"
+                  )}>
+                    <EpisodeCard 
+                      episode={episode}
+                      showId={showId}
+                      showTitle={showTitle}
+                      selectedSeason={selectedSeason}
+                    />
+                    {lastWatchedEpisode === episode.episode_number && (
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                        Continue
+                      </div>
+                    )}
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="-left-4 size-10 bg-background/90 shadow-lg backdrop-blur-sm border-0 hover:bg-background hover:scale-110 transition-all disabled:opacity-0" />
+            <CarouselNext className="-right-4 size-10 bg-background/90 shadow-lg backdrop-blur-sm border-0 hover:bg-background hover:scale-110 transition-all disabled:opacity-0" />
+          </Carousel>
+        </>
       ) : (
         <div className="text-center py-12 bg-card/30 rounded-xl border border-border/50">
           <p className="text-muted-foreground">No episodes available for this season</p>
