@@ -1,52 +1,104 @@
-import type React from "react"
-import type { Metadata, Viewport } from "next"
-import { Poppins } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils"
-import { Analytics } from "@vercel/analytics/next"
-import { GoogleAnalytics } from '@next/third-parties/google'
-import "@/app/globals.css"
-
+import type { Metadata } from "next";
+import { Poppins, Playfair_Display } from "next/font/google";
+import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AppSettingsProvider } from "@/context/app-settings-context";
+import { AuthProvider } from "@/context/auth-context";
+import { Header } from "@/components/header";
+import { getAuthToken } from "@/lib/auth-cookies";
+import { verifyAuthToken } from "@/lib/server-auth";
 
 const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-sans",
-})
+});
+
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair-display",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
 
 export const metadata: Metadata = {
-  title: "BeatWig - Watch Movies and TV Shows Online",
-  description: "Discover the latest movies and TV shows. Watch trailers, find ratings, and get recommendations for what to watch next.",
+  title: "BeatWig",
+  description: "Stream Movies and TV Shows Seamlessly",
   manifest: "/manifest.json",
-}
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "BeatWig",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
+};
 
-export const viewport: Viewport = {
-  themeColor: "#000000",
+export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-}
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
+  let serverUser = null;
+  
+  try {
+    console.log("[RootLayout] Checking auth token...");
+    const token = await getAuthToken();
+    console.log("[RootLayout] Token:", token ? "present" : "missing");
+    
+    if (token) {
+      console.log("[RootLayout] Verifying auth token...");
+      serverUser = await verifyAuthToken(token);
+      console.log("[RootLayout] Server user:", serverUser ? serverUser.uid : "null");
+    }
+  } catch (error) {
+    console.error("[RootLayout] Error fetching user:", error);
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <Analytics />
-        <GoogleAnalytics gaId="G-4V1XSRDJLJ" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#EE1447" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="BeatWig" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", poppins.variable)}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="flex min-h-screen flex-col">
-            <main className="flex-1">{children}</main>
-            {/*<Footer />*/}
-          </div>
+      <body
+        className={`${poppins.variable} ${playfairDisplay.variable} font-sans antialiased`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider initialServerUser={serverUser}>
+            <AppSettingsProvider>
+              <Header />
+              {children}
+            </AppSettingsProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }
-

@@ -1,36 +1,19 @@
-/** @type {import('next').NextConfig} */
+import type { NextConfig } from "next";
 
-import withPWAInit from '@ducanh2912/next-pwa'
-
-const withPWA = withPWAInit({
-  dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-  register: true,
-  // @ts-ignore
-  skipWaiting: true,
-})
-
-const nextConfig = withPWA({
+const nextConfig: NextConfig = {
+  reactCompiler: true,
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'image.tmdb.org',
-        pathname: '/**',
+        protocol: "https",
+        hostname: "images.unsplash.com",
       },
       {
-        protocol: 'https',
-        hostname: 'img.youtube.com',
-        pathname: '/**',
+        protocol: "https",
+        hostname: "image.tmdb.org",
       },
     ],
   },
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000', 'beta.beatwig.site', 'beatwig.site', 'beatwig.vercel.app', 'beatwig-v2.vercel.app'],
-    },
-  },
-})
+};
 
-export default nextConfig
-
+export default nextConfig;
