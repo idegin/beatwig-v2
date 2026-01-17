@@ -86,13 +86,17 @@ function watchHistoryToContinueWatching(item: WatchHistoryItem): ContinueWatchin
   }
 }
 
-function shuffleArray<T>(array: T[]): T[] {
+function shuffleArray<T>(array: T[], seed?: number): T[] {
   const shuffled = [...array]
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
   return shuffled
+}
+
+function getStableKey<T extends { id?: number; name?: string }>(items: T[]): string {
+  return items.map(item => `${item.id ?? ''}-${item.name ?? ''}`).join(',')
 }
 
 function ensureFilmDiversity(films: Film[], maxPerGenre: number = 3): Film[] {
@@ -148,8 +152,17 @@ export function ForYouContent({
   const [shuffledTrending, setShuffledTrending] = React.useState<Film[]>([])
   const [mixedContent, setMixedContent] = React.useState<Film[]>([])
 
+  const hasShuffledRef = React.useRef(false)
+  const trendingKey = React.useMemo(() => trending.map(t => t.id).join(','), [trending])
+  const upcomingKey = React.useMemo(() => upcoming.map(u => u.id).join(','), [upcoming])
+  const popularTVKey = React.useMemo(() => popularTV.map(p => p.id).join(','), [popularTV])
+
   React.useEffect(() => {
-    setShuffledTrending(shuffleArray(trending).slice(0, 12))
+    if (hasShuffledRef.current) return
+    if (trending.length > 0) {
+      hasShuffledRef.current = true
+      setShuffledTrending(shuffleArray(trending).slice(0, 12))
+    }
     
     if (upcoming.length > 0 && popularTV.length > 0) {
       const mixed = shuffleArray([
@@ -158,14 +171,18 @@ export function ForYouContent({
       ])
       setMixedContent(ensureFilmDiversity(mixed))
     }
-  }, [trending, upcoming, popularTV])
+  }, [trending, upcoming, popularTV, trendingKey, upcomingKey, popularTVKey])
+
+  const continueWatchLength = continueWatch.length
+  const hasFetchedHistoryRef = React.useRef(false)
 
   React.useEffect(() => {
     async function fetchWatchHistory() {
-      if (!isAuthenticated || continueWatch.length > 0) {
+      if (!isAuthenticated || continueWatchLength > 0 || hasFetchedHistoryRef.current) {
         return
       }
 
+      hasFetchedHistoryRef.current = true
       setIsLoadingHistory(true)
       try {
         const response = await fetch("/api/auth/watch-history?continue=true&limit=10")
@@ -182,12 +199,18 @@ export function ForYouContent({
     }
 
     fetchWatchHistory()
-  }, [isAuthenticated, continueWatch.length])
+  }, [isAuthenticated, continueWatchLength])
+
+  const topGenresKey = React.useMemo(() => getStableKey(topGenres), [topGenres])
+  const hasFetchedGenresRef = React.useRef(false)
+  const lastGenresKeyRef = React.useRef('')
 
   React.useEffect(() => {
     async function fetchGenreFilms() {
-      if (topGenres.length === 0) return
+      if (topGenres.length === 0 || (hasFetchedGenresRef.current && lastGenresKeyRef.current === topGenresKey)) return
 
+      hasFetchedGenresRef.current = true
+      lastGenresKeyRef.current = topGenresKey
       setIsLoadingGenres(true)
       try {
         const results: { genreName: string; films: Film[] }[] = []
@@ -212,12 +235,18 @@ export function ForYouContent({
     }
 
     fetchGenreFilms()
-  }, [topGenres])
+  }, [topGenres, topGenresKey])
+
+  const topTagsKey = React.useMemo(() => topTags.map(t => t.name).join(','), [topTags])
+  const hasFetchedTagsRef = React.useRef(false)
+  const lastTagsKeyRef = React.useRef('')
 
   React.useEffect(() => {
     async function fetchTagFilms() {
-      if (topTags.length === 0) return
+      if (topTags.length === 0 || (hasFetchedTagsRef.current && lastTagsKeyRef.current === topTagsKey)) return
 
+      hasFetchedTagsRef.current = true
+      lastTagsKeyRef.current = topTagsKey
       setIsLoadingTags(true)
       try {
         const results: { keyword: string; films: Film[] }[] = []
@@ -242,12 +271,18 @@ export function ForYouContent({
     }
 
     fetchTagFilms()
-  }, [topTags])
+  }, [topTags, topTagsKey])
+
+  const lowerTagsKey = React.useMemo(() => lowerRankTags.map(t => t.name).join(','), [lowerRankTags])
+  const hasFetchedLowerTagsRef = React.useRef(false)
+  const lastLowerTagsKeyRef = React.useRef('')
 
   React.useEffect(() => {
     async function fetchLowerTagFilms() {
-      if (lowerRankTags.length === 0) return
+      if (lowerRankTags.length === 0 || (hasFetchedLowerTagsRef.current && lastLowerTagsKeyRef.current === lowerTagsKey)) return
 
+      hasFetchedLowerTagsRef.current = true
+      lastLowerTagsKeyRef.current = lowerTagsKey
       setIsLoadingLowerTags(true)
       try {
         const results: { keyword: string; films: Film[] }[] = []
@@ -272,7 +307,7 @@ export function ForYouContent({
     }
 
     fetchLowerTagFilms()
-  }, [lowerRankTags])
+  }, [lowerRankTags, lowerTagsKey])
 
   const diverseRecommendations = React.useMemo(() => {
     const shuffled = shuffleArray(algorithmRecommendations)
@@ -295,6 +330,35 @@ export function ForYouContent({
       films: shuffleArray(section.films).slice(0, 12)
     }))
   }, [tagFilms])
+
+  const shuffledNowPlaying = React.useMemo(() => {
+    return shuffleArray(nowPlaying).slice(0, 12)
+  }, [nowPlaying])
+
+  const shuffledLowerTagFilms = React.useMemo(() => {
+    return lowerTagFilms.map(section => ({
+      ...section,
+      films: shuffleArray(section.films).slice(0, 12)
+    }))
+  }, [lowerTagFilms])
+
+  const shuffledWhatOthersWatching = React.useMemo(() => {
+    return shuffleArray(whatOthersWatching).slice(0, 12)
+  }, [whatOthersWatching])
+
+  const shuffledPopularThemes = React.useMemo(() => {
+    return popularThemes.map(section => ({
+      ...section,
+      films: shuffleArray(section.films).slice(0, 12)
+    }))
+  }, [popularThemes])
+
+  const shuffledPopularGenreFilms = React.useMemo(() => {
+    return popularGenreFilms.map(section => ({
+      ...section,
+      films: shuffleArray(section.films).slice(0, 12)
+    }))
+  }, [popularGenreFilms])
 
   return (
     <div className="space-y-2 md:space-y-4">
@@ -325,13 +389,13 @@ export function ForYouContent({
         </PageSection>
       )}
 
-      {nowPlaying.length > 0 && (
+      {shuffledNowPlaying.length > 0 && (
         <PageSection
           heading="Now Showing in Theaters"
           subHeading="Currently playing in cinemas"
           altLink={{ route: "/movies", text: "All Movies" }}
         >
-          <FilmRow films={shuffleArray(nowPlaying).slice(0, 12)} />
+          <FilmRow films={shuffledNowPlaying} />
         </PageSection>
       )}
 
@@ -423,7 +487,7 @@ export function ForYouContent({
         </PageSection>
       )}
 
-      {hasUserData && lowerTagFilms.length > 0 && (
+      {hasUserData && shuffledLowerTagFilms.length > 0 && (
         <PageSection
           heading="More Themes For You"
           subHeading="Explore beyond your favorites"
@@ -436,12 +500,12 @@ export function ForYouContent({
             </div>
           ) : (
             <div className="space-y-6">
-              {lowerTagFilms.slice(0, 5).map((section, index) => (
+              {shuffledLowerTagFilms.slice(0, 5).map((section, index) => (
                 <div key={`lower-tag-section-${section.keyword}-${index}`}>
                   <h4 className="text-lg font-medium mb-3 text-muted-foreground capitalize">
                     {section.keyword}
                   </h4>
-                  <FilmRow films={shuffleArray(section.films).slice(0, 12)} />
+                  <FilmRow films={section.films} />
                 </div>
               ))}
             </div>
@@ -449,45 +513,45 @@ export function ForYouContent({
         </PageSection>
       )}
 
-      {!hasUserData && whatOthersWatching.length > 0 && (
+      {!hasUserData && shuffledWhatOthersWatching.length > 0 && (
         <PageSection
           heading="What Others Are Watching"
           subHeading="Popular picks from our community"
         >
-          <FilmRow films={shuffleArray(whatOthersWatching).slice(0, 12)} />
+          <FilmRow films={shuffledWhatOthersWatching} />
         </PageSection>
       )}
 
-      {!hasUserData && popularThemes.length > 0 && (
+      {!hasUserData && shuffledPopularThemes.length > 0 && (
         <PageSection
           heading="Popular Themes"
           subHeading="Trending topics and keywords"
         >
           <div className="space-y-6">
-            {popularThemes.slice(0, 3).map((section, index) => (
+            {shuffledPopularThemes.slice(0, 3).map((section, index) => (
               <div key={`popular-theme-${section.name}-${index}`}>
                 <h4 className="text-lg font-medium mb-3 text-muted-foreground capitalize">
                   {section.name}
                 </h4>
-                <FilmRow films={shuffleArray(section.films).slice(0, 12)} />
+                <FilmRow films={section.films} />
               </div>
             ))}
           </div>
         </PageSection>
       )}
 
-      {!hasUserData && popularGenreFilms.length > 0 && (
+      {!hasUserData && shuffledPopularGenreFilms.length > 0 && (
         <PageSection
           heading="Popular Genres"
           subHeading="Explore what's trending by genre"
         >
           <div className="space-y-6">
-            {popularGenreFilms.slice(0, 3).map((section, index) => (
+            {shuffledPopularGenreFilms.slice(0, 3).map((section, index) => (
               <div key={`popular-genre-${section.genreName}-${index}`}>
                 <h4 className="text-lg font-medium mb-3 text-muted-foreground">
                   {section.genreName}
                 </h4>
-                <FilmRow films={shuffleArray(section.films).slice(0, 12)} />
+                <FilmRow films={section.films} />
               </div>
             ))}
           </div>
