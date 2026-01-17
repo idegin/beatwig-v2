@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppSettingsProvider } from "@/context/app-settings-context";
 import { AuthProvider } from "@/context/auth-context";
+import { AnalyticsProvider } from "@/context/analytics-context";
 import { Header } from "@/components/header";
 import { getAuthToken } from "@/lib/auth-cookies";
 import { verifyAuthToken } from "@/lib/server-auth";
@@ -93,8 +94,10 @@ export default async function RootLayout({
         >
           <AuthProvider initialServerUser={serverUser}>
             <AppSettingsProvider>
-              <Header />
-              {children}
+              <AnalyticsProvider>
+                <Header />
+                {children}
+              </AnalyticsProvider>
             </AppSettingsProvider>
           </AuthProvider>
         </ThemeProvider>

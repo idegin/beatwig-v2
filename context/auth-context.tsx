@@ -9,6 +9,7 @@ import {
 } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { auth, googleProvider, isFirebaseConfigured } from "@/lib/firebase"
+import { analytics$ } from "@/lib/analytics"
 import { getOrCreateUser, FirestoreUser } from "@/lib/firestore/users"
 import { ServerUser } from "@/lib/server-auth"
 
@@ -222,6 +223,13 @@ export function AuthProvider({ children, initialServerUser }: AuthProviderProps)
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token }),
             })
+
+            const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime
+            if (isNewUser) {
+                analytics$.signUp("google")
+            } else {
+                analytics$.login("google")
+            }
 
             console.log("[Auth] User signed in successfully")
         } catch (error) {

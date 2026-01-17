@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useEffect, useState } from "react"
 import { useAuth } from "@/context/auth-context"
+import { analytics$ } from "@/lib/analytics"
 import {
   WATCH_HISTORY_THRESHOLD_SECONDS,
   PROGRESS_UPDATE_INTERVAL_SECONDS,
@@ -117,6 +118,15 @@ export function useWatchHistory({ filmData, iframeRef }: UseWatchHistoryOptions)
         updateWatchHistory(currentProgress, progressSeconds)
         updateAlgorithm(currentProgress)
         lastAlgorithmUpdateRef.current = watchTimeRef.current
+
+        analytics$.videoStart({
+          contentId: filmData.filmId,
+          contentType: filmData.mediaType,
+          title: filmData.title,
+          duration: filmData.runtime ?? undefined,
+          season: filmData.season,
+          episode: filmData.episode,
+        })
       }
     }, WATCH_HISTORY_THRESHOLD_SECONDS * 1000)
 
@@ -136,6 +146,29 @@ export function useWatchHistory({ filmData, iframeRef }: UseWatchHistoryOptions)
       ) {
         lastUpdateRef.current = watchTimeRef.current
         updateWatchHistory(estimatedProgress, watchTimeRef.current)
+
+        analytics$.videoProgress(
+          {
+            contentId: filmData.filmId,
+            contentType: filmData.mediaType,
+            title: filmData.title,
+            season: filmData.season,
+            episode: filmData.episode,
+          },
+          estimatedProgress,
+          watchTimeRef.current
+        )
+
+        if (estimatedProgress >= 90) {
+          analytics$.videoComplete({
+            contentId: filmData.filmId,
+            contentType: filmData.mediaType,
+            title: filmData.title,
+            duration: filmData.runtime ?? undefined,
+            season: filmData.season,
+            episode: filmData.episode,
+          })
+        }
       }
 
       if (

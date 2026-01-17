@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Search, Film, Tv, User, Star, Play, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { analytics$ } from "@/lib/analytics"
 import { TMDB_IMAGE_BASE } from "@/app/constants"
 
 interface SearchResult {
@@ -191,6 +192,11 @@ function SearchContent() {
         if (data.results) {
           if (isNewSearch) {
             setResults(data.results)
+
+            analytics$.search({
+              searchTerm: keyword,
+              resultsCount: data.total_results || data.results.length,
+            })
           } else {
             setResults((prev) => [...prev, ...data.results])
           }
