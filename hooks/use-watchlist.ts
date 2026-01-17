@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useAuth } from "@/context/auth-context"
 import { db, isFirebaseConfigured } from "@/lib/firebase"
+import { analytics$ } from "@/lib/analytics"
 import { 
   doc, 
   setDoc, 
@@ -137,6 +138,13 @@ export function useWatchlist(
         
         console.log("[useWatchlist] Successfully added to watchlist")
         setIsInWatchlist(true)
+
+        analytics$.watchlistAction({
+          contentId: data.filmId,
+          contentType: data.mediaType,
+          title: data.title,
+          action: "add",
+        })
       } catch (error) {
         console.error("[useWatchlist] Error adding to watchlist:", error)
         if (error instanceof Error) {
@@ -192,6 +200,13 @@ export function useWatchlist(
         
         console.log("[useWatchlist] Successfully removed from watchlist")
         setIsInWatchlist(false)
+
+        analytics$.watchlistAction({
+          contentId: filmId,
+          contentType: mediaType,
+          title: "Unknown",
+          action: "remove",
+        })
       } catch (error) {
         console.error("[useWatchlist] Error removing from watchlist:", error)
         if (error instanceof Error) {

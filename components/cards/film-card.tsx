@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Play, Star } from "lucide-react"
 import { Film } from "@/types/tmdb.types"
+import { analytics$ } from "@/lib/analytics"
 import {
   HoverCard,
   HoverCardContent,
@@ -33,6 +34,14 @@ export function FilmCard({ film, variant = "default" }: FilmCardProps) {
     const year = releaseDate ? new Date(releaseDate).getFullYear() : ""
     const slug = title ? slugify(title) : "untitled"
     const href = `/film/${isMovie ? "movie" : "tv"}/${film.id}/${slug}`
+
+    const handleClick = () => {
+        analytics$.selectContent({
+            contentId: film.id,
+            contentType: isMovie ? "movie" : "tv",
+            title: title || "Unknown",
+        })
+    }
     const posterUrl = film.poster_path
         ? `${TMDB_IMAGE_BASE}/w500${film.poster_path}`
         : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=500&q=80"
@@ -44,7 +53,7 @@ export function FilmCard({ film, variant = "default" }: FilmCardProps) {
         return (
             <HoverCard open={open} onOpenChange={setOpen} openDelay={500} closeDelay={300}>
                 <HoverCardTrigger asChild>
-                    <Link href={href} className="group block">
+                    <Link href={href} onClick={handleClick} className="group block">
                         <div className="relative aspect-video rounded-xl overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all hover:shadow-2xl">
                             <img
                                 src={backdropUrl}
@@ -110,7 +119,7 @@ export function FilmCard({ film, variant = "default" }: FilmCardProps) {
         return (
             <HoverCard open={open} onOpenChange={setOpen} openDelay={500} closeDelay={300}>
                 <HoverCardTrigger asChild>
-                    <Link href={href} className="group block">
+                    <Link href={href} onClick={handleClick} className="group block">
                         <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all hover:shadow-xl">
                             <img
                                 src={posterUrl}
@@ -172,7 +181,7 @@ export function FilmCard({ film, variant = "default" }: FilmCardProps) {
     return (
         <HoverCard open={open} onOpenChange={setOpen} openDelay={500} closeDelay={300}>
             <HoverCardTrigger asChild>
-                <Link href={href} className="group block">
+                <Link href={href} onClick={handleClick} className="group block">
                     <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl">
                         <img
                             src={posterUrl}
