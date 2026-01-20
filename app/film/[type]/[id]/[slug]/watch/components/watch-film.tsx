@@ -17,7 +17,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
 import { FilmDetailsData, Episode, Season } from "@/types/tmdb.types"
-import { EpisodeBrowser } from "./episode-browser"
+// import { EpisodeBrowser } from "./episode-browser"
 import { useWatchHistory } from "@/hooks/use-watch-history"
 
 interface WatchFilmProps {
@@ -352,7 +352,7 @@ export function WatchFilm({
         </div>
       </div>
 
-      <EpisodeBrowser
+      {/* <EpisodeBrowser
         open={browserOpen}
         onOpenChange={setBrowserOpen}
         seasons={seasons}
@@ -363,7 +363,7 @@ export function WatchFilm({
         onSeasonChange={fetchEpisodes}
         onEpisodeSelect={navigateToEpisode}
         showId={filmId}
-      />
+      /> */}
     </div>
   )
 }
