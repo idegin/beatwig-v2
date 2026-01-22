@@ -1,4 +1,4 @@
 {
   "framework": "nextjs",
-   "buildCommand": "rm -rf .next node_modules/.cache && npm i -f && next build"
+  "buildCommand": "rm -rf .next node_modules/.cache && npm i -f && next build"
 }
